@@ -1,0 +1,83 @@
+:root {
+  font-family: Inter, sans-serif;
+}
+
+body,
+html,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.desktop {
+  position: relative;
+  height: 100%;
+  background: linear-gradient(180deg, #0f172a, #1e293b);
+  overflow: hidden;
+}
+
+.toolbar {
+  padding: 12px;
+}
+
+.window {
+  position: absolute;
+  background: #f8fafc;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 40%);
+}
+
+.titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #cbd5e1;
+  border-bottom: 1px solid #94a3b8;
+  cursor: move;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.content {
+  padding: 16px;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+}
+
+.taskbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: rgb(15 23 42 / 80%);
+}
+
+.task-item {
+  border: 1px solid #64748b;
+  background: #1e293b;
+  color: white;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+.task-item.minimized {
+  opacity: 0.7;
+}
