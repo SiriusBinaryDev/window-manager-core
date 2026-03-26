@@ -63,4 +63,33 @@ describe('window manager core', () => {
     const hydrated = hydrateState(raw);
     expect(hydrated?.windows['1']).toBeDefined();
   });
+
+
+  it('returns null for malformed hydration payloads', () => {
+    expect(hydrateState('{invalid json')).toBeNull();
+  });
+
+  it('does not restore closed windows', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.closeWindow('1'));
+    state = windowManagerReducer(state, commands.restoreWindow('1'));
+    expect(state.windows['1'].state.closed).toBe(true);
+    expect(state.activeWindowId).toBeNull();
+  });
+
+  it('maximizes using desktop bounds extents', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(
+      state,
+      commands.setDesktop({
+        size: { width: 1200, height: 700 },
+        bounds: { minX: 20, minY: 10, maxX: 1180, maxY: 690 },
+      }),
+    );
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.maximizeWindow('1'));
+    expect(state.windows['1'].rect).toEqual({ x: 20, y: 10, width: 1160, height: 680 });
+  });
+
 });

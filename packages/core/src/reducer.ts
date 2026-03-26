@@ -27,6 +27,16 @@ const DEFAULT_FLAGS = {
   closable: true,
 };
 
+
+function getDesktopRect(desktop: DesktopState): Rect {
+  return {
+    x: desktop.bounds.minX,
+    y: desktop.bounds.minY,
+    width: desktop.bounds.maxX - desktop.bounds.minX,
+    height: desktop.bounds.maxY - desktop.bounds.minY,
+  };
+}
+
 function findNextActiveId(state: WindowManagerState): WindowId | null {
   for (let index = state.orderedWindowIds.length - 1; index >= 0; index -= 1) {
     const id = state.orderedWindowIds[index];
@@ -179,7 +189,7 @@ export function windowManagerReducer(
 
     case 'MAXIMIZE_WINDOW': {
       const windowEntity = state.windows[command.payload.id];
-      if (!windowEntity || windowEntity.state.maximized) {
+      if (!windowEntity || windowEntity.state.closed || windowEntity.state.maximized) {
         return state;
       }
 
@@ -188,12 +198,7 @@ export function windowManagerReducer(
           ...current,
           state: { ...current.state, minimized: false, maximized: true },
           restoreRect: current.state.maximized ? current.restoreRect : current.rect,
-          rect: {
-            x: state.desktop.bounds.minX,
-            y: state.desktop.bounds.minY,
-            width: state.desktop.size.width,
-            height: state.desktop.size.height,
-          },
+          rect: getDesktopRect(state.desktop),
         })),
         activeWindowId: command.payload.id,
         orderedWindowIds: bringToFront(state, command.payload.id).orderedWindowIds,
@@ -219,7 +224,7 @@ export function windowManagerReducer(
 
     case 'RESTORE_WINDOW': {
       const windowEntity = state.windows[command.payload.id];
-      if (!windowEntity) {
+      if (!windowEntity || windowEntity.state.closed) {
         return state;
       }
 
@@ -270,12 +275,7 @@ export function windowManagerReducer(
           if (current.state.maximized) {
             return {
               ...current,
-              rect: {
-                x: command.payload.bounds.minX,
-                y: command.payload.bounds.minY,
-                width: command.payload.size.width,
-                height: command.payload.size.height,
-              },
+              rect: getDesktopRect(command.payload),
             };
           }
 

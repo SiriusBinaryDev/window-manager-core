@@ -10,11 +10,15 @@ export function serializeState(state: WindowManagerState): string {
 }
 
 export function hydrateState(raw: string): WindowManagerState | null {
-  const parsed = JSON.parse(raw) as SerializationEnvelope;
+  try {
+    const parsed = JSON.parse(raw) as SerializationEnvelope;
 
-  if (parsed.version !== WINDOW_MANAGER_STATE_VERSION) {
+    if (parsed.version !== WINDOW_MANAGER_STATE_VERSION) {
+      return null;
+    }
+
+    return parsed.state;
+  } catch {
     return null;
   }
-
-  return parsed.state;
 }
