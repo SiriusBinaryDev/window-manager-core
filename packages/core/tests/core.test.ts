@@ -18,6 +18,38 @@ describe('window manager core', () => {
     expect(state.activeWindowId).toBe('1');
   });
 
+  it('focus next window cycles through visible windows', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '3' }));
+
+    state = windowManagerReducer(state, commands.focusNextWindow());
+    expect(state.activeWindowId).toBe('1');
+
+    state = windowManagerReducer(state, commands.focusNextWindow());
+    expect(state.activeWindowId).toBe('2');
+
+    state = windowManagerReducer(state, commands.focusNextWindow());
+    expect(state.activeWindowId).toBe('3');
+  });
+
+  it('focus previous window cycles through visible windows in reverse', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '3' }));
+
+    state = windowManagerReducer(state, commands.focusPreviousWindow());
+    expect(state.activeWindowId).toBe('2');
+
+    state = windowManagerReducer(state, commands.focusPreviousWindow());
+    expect(state.activeWindowId).toBe('1');
+
+    state = windowManagerReducer(state, commands.focusPreviousWindow());
+    expect(state.activeWindowId).toBe('3');
+  });
+
   it('minimize and restore window', () => {
     let state = createInitialState();
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));

@@ -33,6 +33,7 @@ wm.createWindow({
 });
 
 wm.focusWindow('terminal');
+wm.focusNextWindow();
 wm.moveWindow('terminal', 20, 16);
 
 console.log(wm.getState().activeWindowId);
@@ -45,6 +46,7 @@ Use this path when:
 - you want direct command methods instead of a reducer integration
 - you want to serialize and restore state with `serialize()` / `hydrate()`
 - you want optional desktop-edge snapping during move/resize
+- you want keyboard-style focus traversal without coupling to React
 
 ## 2. Reducer + Commands Integration
 
@@ -71,6 +73,7 @@ state = windowManagerReducer(
 
 state = windowManagerReducer(state, commands.minimizeWindow('notes'));
 state = windowManagerReducer(state, commands.restoreWindow('notes'));
+state = windowManagerReducer(state, commands.focusNextWindow());
 
 const taskbar = selectors.getTaskbarItems(state);
 const active = selectors.getActiveWindow(state);
@@ -84,6 +87,7 @@ Use this path when:
 - you need pure state transitions
 - you want time-travel/debug tooling outside this library
 - you want to dispatch typed commands from another store or framework
+- you want to trigger focus traversal with command factories
 
 ## 3. Persisted React Integration
 
@@ -117,6 +121,12 @@ function Desktop() {
         }
       >
         New window
+      </button>
+      <button onClick={() => wm.focusPreviousWindow()}>
+        Previous window
+      </button>
+      <button onClick={() => wm.focusNextWindow()}>
+        Next window
       </button>
 
       <pre>{JSON.stringify(windows, null, 2)}</pre>
@@ -154,6 +164,7 @@ Use this path when:
 - React renders the desktop/taskbar/window chrome
 - you want the core rules to stay outside components
 - you want persistence without rebuilding the serialization envelope manually
+- you want to map UI buttons or shortcuts to core focus traversal
 
 ## 4. Reading Derived State
 
@@ -177,5 +188,5 @@ These examples intentionally stay within currently implemented features:
 - single desktop
 - rectangular desktop bounds
 - desktop-edge snapping only when `desktop.snap.threshold` is configured
-- no keyboard navigation
+- keyboard navigation currently covers focus traversal only
 - no multi-monitor or multi-desktop support

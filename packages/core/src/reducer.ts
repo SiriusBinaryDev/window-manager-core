@@ -62,6 +62,44 @@ function bringToFront(state: WindowManagerState, id: WindowId): WindowManagerSta
   };
 }
 
+function getVisibleWindowIds(state: WindowManagerState): WindowId[] {
+  return state.orderedWindowIds.filter((id) => {
+    const windowEntity = state.windows[id];
+    return !!windowEntity && !windowEntity.state.closed && !windowEntity.state.minimized;
+  });
+}
+
+function rotateVisibleWindowOrder(
+  state: WindowManagerState,
+  direction: 'next' | 'previous',
+): WindowManagerState | null {
+  const visibleWindowIds = getVisibleWindowIds(state);
+  if (visibleWindowIds.length === 0) {
+    return null;
+  }
+
+  const rotatedVisibleIds =
+    direction === 'next'
+      ? [...visibleWindowIds.slice(1), visibleWindowIds[0]]
+      : [visibleWindowIds[visibleWindowIds.length - 1], ...visibleWindowIds.slice(0, -1)];
+  const visibleIdSet = new Set(visibleWindowIds);
+  let visibleIndex = 0;
+
+  return {
+    ...state,
+    orderedWindowIds: state.orderedWindowIds.map((id) => {
+      if (!visibleIdSet.has(id)) {
+        return id;
+      }
+
+      const nextId = rotatedVisibleIds[visibleIndex];
+      visibleIndex += 1;
+      return nextId;
+    }),
+    activeWindowId: rotatedVisibleIds[rotatedVisibleIds.length - 1] ?? null,
+  };
+}
+
 function patchWindow(
   state: WindowManagerState,
   id: WindowId,
@@ -149,6 +187,19 @@ export function windowManagerReducer(
         ...layered,
         activeWindowId: command.payload.id,
       };
+    }
+
+    case 'FOCUS_NEXT_WINDOW':
+    case 'FOCUS_PREVIOUS_WINDOW': {
+      const rotatedState = rotateVisibleWindowOrder(
+        state,
+        command.type === 'FOCUS_NEXT_WINDOW' ? 'next' : 'previous',
+      );
+      if (!rotatedState) {
+        return state;
+      }
+
+      return rotatedState;
     }
 
     case 'MOVE_WINDOW': {

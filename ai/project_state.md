@@ -28,6 +28,9 @@
 - Desktop snap primitives are implemented in the core:
   - optional desktop-edge snapping via `desktop.snap.threshold`
   - snapping applies to move and resize operations
+- Keyboard focus traversal is implemented:
+  - core commands and manager methods for next/previous window focus
+  - playground buttons and shortcuts for traversal
 - Desktop-bound clamping during create, move, resize, restore, and desktop updates
 - Hydration sanitization now:
   - validates envelope structure
@@ -65,7 +68,6 @@
 
 ## Not Implemented
 
-- Keyboard navigation / focus traversal
 - Performance work for large window counts
 - Multi-desktop support
 - Multi-monitor support
@@ -86,7 +88,7 @@
 ## Current Development Focus
 
 - Inferred focus from repo docs and backlog artifacts:
-  - add near-term interaction features such as keyboard navigation
+  - improve accessibility in the playground and future examples
   - improve test and verification coverage beyond direct package-level checks
   - validate the new release scaffolding in real CI/publishing credentials
 
@@ -99,6 +101,7 @@
 - README public API documentation was added based on current exports only
 - `docs/examples.md` adds imperative, reducer, and React persistence examples without creating a second app
 - Desktop snapping is implemented in `packages/core` and documented in `docs/examples.md`
+- Keyboard focus traversal is implemented in `packages/core` and exposed in the playground via buttons and `Alt+Shift+ArrowLeft/ArrowRight`
 - Changesets now manages versioning:
   - root scripts: `pnpm changeset`, `pnpm version-packages`, `pnpm release`
   - release workflow: `.github/workflows/release.yml`

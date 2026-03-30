@@ -16,6 +16,12 @@ export const commands = {
     type: 'FOCUS_WINDOW',
     payload: { id },
   }),
+  focusNextWindow: (): WindowManagerCommand => ({
+    type: 'FOCUS_NEXT_WINDOW',
+  }),
+  focusPreviousWindow: (): WindowManagerCommand => ({
+    type: 'FOCUS_PREVIOUS_WINDOW',
+  }),
   moveWindow: (id: WindowId, deltaX: number, deltaY: number): WindowManagerCommand => ({
     type: 'MOVE_WINDOW',
     payload: { id, deltaX, deltaY },

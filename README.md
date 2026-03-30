@@ -30,6 +30,8 @@ Crea una instancia imperativa del manager. Expone:
 - `subscribe(listener)`: escucha cambios de estado
 - `createWindow(payload)`
 - `focusWindow(id)`
+- `focusNextWindow()`
+- `focusPreviousWindow()`
 - `moveWindow(id, deltaX, deltaY)`
 - `resizeWindow(id, edge, deltaX, deltaY)`
 - `maximizeWindow(id)`
@@ -52,6 +54,8 @@ Factories de comandos para:
 
 - `createWindow(payload)`
 - `focusWindow(id)`
+- `focusNextWindow()`
+- `focusPreviousWindow()`
 - `moveWindow(id, deltaX, deltaY)`
 - `resizeWindow(id, edge, deltaX, deltaY)`
 - `maximizeWindow(id)`

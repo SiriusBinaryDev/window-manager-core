@@ -19,6 +19,8 @@ export interface WindowManager {
   subscribe: (listener: Listener) => () => void;
   createWindow: (payload: CreateWindowPayload) => WindowManagerState;
   focusWindow: (id: WindowId) => WindowManagerState;
+  focusNextWindow: () => WindowManagerState;
+  focusPreviousWindow: () => WindowManagerState;
   moveWindow: (id: WindowId, deltaX: number, deltaY: number) => WindowManagerState;
   resizeWindow: (id: WindowId, edge: ResizeEdge, deltaX: number, deltaY: number) => WindowManagerState;
   maximizeWindow: (id: WindowId) => WindowManagerState;
@@ -58,6 +60,8 @@ export function createWindowManager(initialState: WindowManagerState = createIni
     },
     createWindow: (payload) => dispatch(commands.createWindow(payload)),
     focusWindow: (id) => dispatch(commands.focusWindow(id)),
+    focusNextWindow: () => dispatch(commands.focusNextWindow()),
+    focusPreviousWindow: () => dispatch(commands.focusPreviousWindow()),
     moveWindow: (id, deltaX, deltaY) => dispatch(commands.moveWindow(id, deltaX, deltaY)),
     resizeWindow: (id, edge, deltaX, deltaY) =>
       dispatch(commands.resizeWindow(id, edge, deltaX, deltaY)),

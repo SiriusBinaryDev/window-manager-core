@@ -1,6 +1,6 @@
 import { createWindowManager } from '@window-manager/core';
 import { WindowManagerProvider, useTaskbar, useVisibleWindows, useWindowManager } from '@window-manager/react';
-import { StrictMode, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { StrictMode, useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import './styles.css';
@@ -11,6 +11,25 @@ function App() {
   const manager = useWindowManager();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (!event.altKey || !event.shiftKey) {
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        manager.focusNextWindow();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        manager.focusPreviousWindow();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [manager]);
 
   return (
     <div className="desktop">
@@ -23,6 +42,9 @@ function App() {
         >
           New window
         </button>
+        <button onClick={() => manager.focusPreviousWindow()}>Previous window</button>
+        <button onClick={() => manager.focusNextWindow()}>Next window</button>
+        <span>Alt+Shift+Left / Alt+Shift+Right</span>
       </div>
       {windows.map((windowEntity, index) => (
         <WindowView key={windowEntity.id} id={windowEntity.id} zIndex={100 + index} />

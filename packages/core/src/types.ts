@@ -79,6 +79,8 @@ export type ResizeEdge =
 export type WindowManagerCommand =
   | { type: 'CREATE_WINDOW'; payload: CreateWindowPayload }
   | { type: 'FOCUS_WINDOW'; payload: { id: WindowId } }
+  | { type: 'FOCUS_NEXT_WINDOW' }
+  | { type: 'FOCUS_PREVIOUS_WINDOW' }
   | { type: 'MOVE_WINDOW'; payload: { id: WindowId; deltaX: number; deltaY: number } }
   | {
       type: 'RESIZE_WINDOW';
