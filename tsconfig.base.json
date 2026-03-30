@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -17,6 +18,10 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "sourceMap": true,
-    "lib": ["ES2020", "DOM"]
+    "lib": ["ES2020", "DOM"],
+    "paths": {
+      "@window-manager/core": ["packages/core/src/index.ts"],
+      "@window-manager/react": ["packages/react/src/index.tsx"]
+    }
   }
 }

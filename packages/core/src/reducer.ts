@@ -1,4 +1,5 @@
-import { clampRectToBounds, moveRect, resizeRect } from './math';
+import { clampRectToBounds, moveRect, resizeRect, snapRectToBounds, snapResizedRectToBounds } from './math';
+import { sanitizeWindowManagerState } from './serialization';
 import type {
   DesktopState,
   Rect,
@@ -35,6 +36,10 @@ function getDesktopRect(desktop: DesktopState): Rect {
     width: desktop.bounds.maxX - desktop.bounds.minX,
     height: desktop.bounds.maxY - desktop.bounds.minY,
   };
+}
+
+function getSnapThreshold(desktop: DesktopState): number {
+  return desktop.snap?.threshold ?? 0;
 }
 
 function findNextActiveId(state: WindowManagerState): WindowId | null {
@@ -103,7 +108,6 @@ export function windowManagerReducer(
       const safeRect = clampRectToBounds(baseRect, state.desktop.bounds);
       const windowEntity: WindowEntity = {
         id: command.payload.id,
-        title: command.payload.title,
         state: {
           minimized: false,
           maximized: false,
@@ -115,6 +119,7 @@ export function windowManagerReducer(
           ...DEFAULT_FLAGS,
           ...command.payload.flags,
         },
+        ...(command.payload.title !== undefined ? { title: command.payload.title } : {}),
       };
 
       const nextState = {
@@ -154,7 +159,8 @@ export function windowManagerReducer(
 
       return patchWindow(state, command.payload.id, (current) => {
         const moved = moveRect(current.rect, command.payload.deltaX, command.payload.deltaY);
-        const clamped = clampRectToBounds(moved, state.desktop.bounds);
+        const snapped = snapRectToBounds(moved, state.desktop.bounds, getSnapThreshold(state.desktop));
+        const clamped = clampRectToBounds(snapped, state.desktop.bounds);
 
         return {
           ...current,
@@ -177,7 +183,13 @@ export function windowManagerReducer(
           command.payload.deltaX,
           command.payload.deltaY,
         );
-        const clamped = clampRectToBounds(resized, state.desktop.bounds);
+        const snapped = snapResizedRectToBounds(
+          resized,
+          state.desktop.bounds,
+          command.payload.edge,
+          getSnapThreshold(state.desktop),
+        );
+        const clamped = clampRectToBounds(snapped, state.desktop.bounds);
 
         return {
           ...current,
@@ -290,7 +302,7 @@ export function windowManagerReducer(
     }
 
     case 'HYDRATE_STATE': {
-      return command.payload;
+      return sanitizeWindowManagerState(command.payload) ?? state;
     }
 
     default: {

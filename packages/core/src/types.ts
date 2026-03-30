@@ -22,6 +22,11 @@ export interface DesktopState {
     height: number;
   };
   bounds: Bounds;
+  snap?: DesktopSnapSettings;
+}
+
+export interface DesktopSnapSettings {
+  threshold: number;
 }
 
 export interface WindowFlags {

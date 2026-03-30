@@ -19,7 +19,7 @@ const WindowManagerContext = createContext<WindowManager | null>(null);
 export function WindowManagerProvider({
   children,
   manager,
-}: PropsWithChildren<{ manager?: WindowManager }>): JSX.Element {
+}: PropsWithChildren<{ manager?: WindowManager }>): React.JSX.Element {
   const value = useMemo(() => manager ?? createWindowManager(), [manager]);
 
   return <WindowManagerContext.Provider value={value}>{children}</WindowManagerContext.Provider>;

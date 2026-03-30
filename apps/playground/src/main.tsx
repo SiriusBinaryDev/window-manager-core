@@ -133,8 +133,8 @@ function Root() {
     if (serialized) {
       instance.hydrate(serialized);
     }
-    instance.subscribe((state) => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: state.version, state }));
+    instance.subscribe(() => {
+      localStorage.setItem(STORAGE_KEY, instance.serialize());
     });
     return instance;
   }, []);

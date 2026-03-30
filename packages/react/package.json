@@ -1,29 +1,35 @@
 {
-  "name": "@window-manager/react",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "tsup src/index.tsx --format esm --dts",
-    "test": "vitest run",
-    "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
-  },
-  "peerDependencies": {
-    "react": ">=18"
-  },
-  "dependencies": {
-    "@window-manager/core": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/react": "^19.1.2",
-    "tsup": "^8.5.0"
-  }
+    "name":  "@window-manager/react",
+    "version":  "0.1.0",
+    "type":  "module",
+    "main":  "dist/index.js",
+    "types":  "dist/index.d.ts",
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "import":  "./dist/index.js"
+                          }
+                },
+    "scripts":  {
+                    "build":  "tsup src/index.tsx --format esm --dts",
+                    "test":  "vitest run",
+                    "lint":  "eslint src --ext .ts,.tsx",
+                    "typecheck":  "tsc --noEmit"
+                },
+    "peerDependencies":  {
+                             "react":  "\u003e=18"
+                         },
+    "dependencies":  {
+                         "@window-manager/core":  "workspace:*"
+                     },
+    "devDependencies":  {
+                            "@types/react":  "^19.1.2",
+                            "tsup":  "^8.5.0"
+                        },
+    "files":  [
+                  "dist"
+              ],
+    "publishConfig":  {
+                          "access":  "public"
+                      }
 }

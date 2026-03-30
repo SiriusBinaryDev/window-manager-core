@@ -34,6 +34,80 @@ export function clampRectToBounds(rect: Rect, bounds: Bounds): Rect {
   };
 }
 
+function getClampedRightX(bounds: Bounds, width: number): number {
+  return Math.max(bounds.minX, bounds.maxX - width);
+}
+
+function getClampedBottomY(bounds: Bounds, height: number): number {
+  return Math.max(bounds.minY, bounds.maxY - height);
+}
+
+export function snapRectToBounds(rect: Rect, bounds: Bounds, threshold: number): Rect {
+  if (threshold <= 0) {
+    return rect;
+  }
+
+  const leftTarget = bounds.minX;
+  const rightTarget = getClampedRightX(bounds, rect.width);
+  const topTarget = bounds.minY;
+  const bottomTarget = getClampedBottomY(bounds, rect.height);
+  const leftDistance = Math.abs(rect.x - leftTarget);
+  const rightDistance = Math.abs(rect.x - rightTarget);
+  const topDistance = Math.abs(rect.y - topTarget);
+  const bottomDistance = Math.abs(rect.y - bottomTarget);
+
+  return {
+    ...rect,
+    x:
+      leftDistance <= threshold && leftDistance <= rightDistance
+        ? leftTarget
+        : rightDistance <= threshold
+          ? rightTarget
+          : rect.x,
+    y:
+      topDistance <= threshold && topDistance <= bottomDistance
+        ? topTarget
+        : bottomDistance <= threshold
+          ? bottomTarget
+          : rect.y,
+  };
+}
+
+export function snapResizedRectToBounds(
+  rect: Rect,
+  bounds: Bounds,
+  edge: ResizeEdge,
+  threshold: number,
+): Rect {
+  if (threshold <= 0) {
+    return rect;
+  }
+
+  let nextRect: Rect = { ...rect };
+  const right = rect.x + rect.width;
+  const bottom = rect.y + rect.height;
+
+  if (edge.includes('left') && Math.abs(rect.x - bounds.minX) <= threshold) {
+    nextRect.width = right - bounds.minX;
+    nextRect.x = bounds.minX;
+  }
+
+  if (edge.includes('right') && Math.abs(right - bounds.maxX) <= threshold) {
+    nextRect.width = bounds.maxX - nextRect.x;
+  }
+
+  if (edge.includes('top') && Math.abs(rect.y - bounds.minY) <= threshold) {
+    nextRect.height = bottom - bounds.minY;
+    nextRect.y = bounds.minY;
+  }
+
+  if (edge.includes('bottom') && Math.abs(bottom - bounds.maxY) <= threshold) {
+    nextRect.height = bounds.maxY - nextRect.y;
+  }
+
+  return nextRect;
+}
+
 export function resizeRect(
   rect: Rect,
   edge: ResizeEdge,
