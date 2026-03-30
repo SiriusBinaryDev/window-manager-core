@@ -2,11 +2,10 @@
 
 ## Now
 
-- Improve accessibility in the playground and future examples
+- Add at least basic tests for the React adapter and/or the playground integration
 
 ## Next
 
-- Add at least basic tests for the React adapter and/or the playground integration
 - Validate the release workflow with real CI secrets when publishing is intended
 - Improve performance for larger numbers of windows
 

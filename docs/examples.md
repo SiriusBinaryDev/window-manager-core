@@ -165,6 +165,7 @@ Use this path when:
 - you want the core rules to stay outside components
 - you want persistence without rebuilding the serialization envelope manually
 - you want to map UI buttons or shortcuts to core focus traversal
+- you want to layer labels, roles, and focusable containers on top of the headless core
 
 ## 4. Reading Derived State
 

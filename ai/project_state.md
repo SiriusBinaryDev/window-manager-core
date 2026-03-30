@@ -57,6 +57,7 @@
   - focus
   - minimize/maximize/close
   - localStorage persistence via `createWindowManager().serialize()` / `.hydrate()`
+  - accessibility affordances such as roles, labels, focusable windows, and visible focus rings
 - Source-level TypeScript resolution now works across the workspace through root `tsconfig` path mappings
 - README now includes a concise public API reference for `@window-manager/core` and `@window-manager/react`
 - `docs/examples.md` now documents multiple concrete usage paths for the current API
@@ -88,9 +89,9 @@
 ## Current Development Focus
 
 - Inferred focus from repo docs and backlog artifacts:
-  - improve accessibility in the playground and future examples
   - improve test and verification coverage beyond direct package-level checks
   - validate the new release scaffolding in real CI/publishing credentials
+  - expand non-core coverage beyond the current core-only tests
 
 ## Notes For Next Session
 
@@ -102,6 +103,7 @@
 - `docs/examples.md` adds imperative, reducer, and React persistence examples without creating a second app
 - Desktop snapping is implemented in `packages/core` and documented in `docs/examples.md`
 - Keyboard focus traversal is implemented in `packages/core` and exposed in the playground via buttons and `Alt+Shift+ArrowLeft/ArrowRight`
+- Playground accessibility was improved with labels, roles, focusable windows, and visible focus styles
 - Changesets now manages versioning:
   - root scripts: `pnpm changeset`, `pnpm version-packages`, `pnpm release`
   - release workflow: `.github/workflows/release.yml`

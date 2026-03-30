@@ -32,9 +32,10 @@ function App() {
   }, [manager]);
 
   return (
-    <div className="desktop">
-      <div className="toolbar">
+    <main className="desktop" role="application" aria-label="Window manager playground" aria-describedby="desktop-help">
+      <div className="toolbar" role="toolbar" aria-label="Desktop controls">
         <button
+          aria-label="Create a new window"
           onClick={() => {
             const id = crypto.randomUUID().slice(0, 8);
             manager.createWindow({ id, title: `Window ${id}` });
@@ -42,18 +43,30 @@ function App() {
         >
           New window
         </button>
-        <button onClick={() => manager.focusPreviousWindow()}>Previous window</button>
-        <button onClick={() => manager.focusNextWindow()}>Next window</button>
-        <span>Alt+Shift+Left / Alt+Shift+Right</span>
+        <button aria-label="Focus the previous window" onClick={() => manager.focusPreviousWindow()}>
+          Previous window
+        </button>
+        <button aria-label="Focus the next window" onClick={() => manager.focusNextWindow()}>
+          Next window
+        </button>
+        <span aria-hidden="true">Alt+Shift+Left / Alt+Shift+Right</span>
       </div>
+      <p id="desktop-help" className="sr-only">
+        Use Alt+Shift+Left or Alt+Shift+Right to move keyboard focus between visible windows.
+      </p>
       {windows.map((windowEntity, index) => (
         <WindowView key={windowEntity.id} id={windowEntity.id} zIndex={100 + index} />
       ))}
-      <div className="taskbar">
+      <div className="taskbar" role="toolbar" aria-label="Taskbar">
         {taskbar.map((item) => (
           <button
             key={item.id}
             className={item.state.minimized ? 'task-item minimized' : 'task-item'}
+            aria-label={
+              item.state.minimized
+                ? `Restore window ${item.title ?? item.id}`
+                : `Focus window ${item.title ?? item.id}`
+            }
             onClick={() => {
               if (item.state.closed) {
                 return;
@@ -69,7 +82,7 @@ function App() {
           </button>
         ))}
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -79,6 +92,7 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
   const windowEntity = windows.find((item) => item.id === id) ?? null;
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const resizeRef = useRef<{ x: number; y: number } | null>(null);
+  const titleId = `window-title-${id}`;
 
   if (!windowEntity) {
     return null;
@@ -126,6 +140,10 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
   return (
     <div
       className="window"
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby={titleId}
+      tabIndex={0}
       style={{
         transform: `translate(${windowEntity.rect.x}px, ${windowEntity.rect.y}px)`,
         width: `${windowEntity.rect.width}px`,
@@ -133,17 +151,24 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
         zIndex,
       }}
       onPointerDown={() => manager.focusWindow(windowEntity.id)}
+      onFocus={() => manager.focusWindow(windowEntity.id)}
     >
       <div className="titlebar" onPointerDown={startDrag} onPointerMove={onDrag} onPointerUp={stopDrag}>
-        <span>{windowEntity.title ?? windowEntity.id}</span>
+        <span id={titleId}>{windowEntity.title ?? windowEntity.id}</span>
         <div className="actions">
-          <button onClick={() => manager.minimizeWindow(windowEntity.id)}>-</button>
-          <button onClick={() => manager.maximizeWindow(windowEntity.id)}>+</button>
-          <button onClick={() => manager.closeWindow(windowEntity.id)}>x</button>
+          <button aria-label={`Minimize ${windowEntity.title ?? windowEntity.id}`} onClick={() => manager.minimizeWindow(windowEntity.id)}>-</button>
+          <button aria-label={`Maximize ${windowEntity.title ?? windowEntity.id}`} onClick={() => manager.maximizeWindow(windowEntity.id)}>+</button>
+          <button aria-label={`Close ${windowEntity.title ?? windowEntity.id}`} onClick={() => manager.closeWindow(windowEntity.id)}>x</button>
         </div>
       </div>
       <div className="content">Headless core + React adapter demo</div>
-      <div className="resize-handle" onPointerDown={startResize} onPointerMove={onResize} onPointerUp={stopResize} />
+      <div
+        className="resize-handle"
+        aria-hidden="true"
+        onPointerDown={startResize}
+        onPointerMove={onResize}
+        onPointerUp={stopResize}
+      />
     </div>
   );
 }
