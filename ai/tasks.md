@@ -3,6 +3,8 @@
 ## Now
 
 - Validate the release workflow with real CI secrets when publishing is intended
+  - local workflow hardening and operator docs are complete
+  - external publish validation is still pending on secrets and npm access
 
 ## Next
 

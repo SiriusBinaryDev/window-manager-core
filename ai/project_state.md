@@ -13,7 +13,12 @@
   - `@changesets/cli` is installed at the workspace root
   - `.changeset/config.json` is configured for public scoped packages
   - `.github/workflows/release.yml` creates version PRs and publishes when `NPM_TOKEN` is available
+  - CI and release installs now use `pnpm install --frozen-lockfile`
+  - release runs now use workflow concurrency to avoid overlapping publish jobs on the same ref
   - a real pending changeset exists for the current package changes
+- Release preflight now includes:
+  - root script `pnpm build:packages` for the publishable packages only
+  - expanded operator documentation in `docs/releasing.md`
 - Core window lifecycle commands and reducer cases:
   - create
   - focus
@@ -72,7 +77,7 @@
 
 ## In Progress
 
-- No active product feature work inferred from the current worktree; the next backlog item is release-workflow validation when publishing credentials are available
+- Release workflow hardening is complete locally, but full publish validation is still blocked on repository secrets and npm publish access
 
 ## Not Implemented
 
@@ -117,8 +122,15 @@
 - Playground accessibility was improved with labels, roles, focusable windows, and visible focus styles
 - Changesets now manages versioning:
   - root scripts: `pnpm changeset`, `pnpm version-packages`, `pnpm release`
+  - release preflight script: `pnpm build:packages`
   - release workflow: `.github/workflows/release.yml`
   - pending release entry: `.changeset/bright-tables-shave.md`
+- CI and release workflows now install with:
+  - `pnpm install --frozen-lockfile`
+- Release documentation now includes:
+  - current publish-on-`main` behavior
+  - repository secret prerequisites
+  - a release readiness checklist in `docs/releasing.md`
 - Direct typechecks passed with:
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
@@ -127,6 +139,8 @@
   - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
 - The workspace test command now passes with:
   - `pnpm.cmd -r test`
+- Publishable package builds now pass with:
+  - `pnpm.cmd build:packages`
 - Direct typechecks still pass for the touched non-core packages:
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`

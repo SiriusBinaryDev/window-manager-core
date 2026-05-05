@@ -2,72 +2,59 @@
 
 ## Title
 
-- Add at least basic tests for the React adapter and/or the playground integration
+- Validate the release workflow with real CI secrets when publishing is intended
 
 ## Status
 
-- Completed
+- In progress
 
 ## Objective
 
-- Add non-core verification so regressions in the React adapter or playground can be caught without relying only on manual testing
+- Harden the existing CI and publish-on-`main` workflow so the repository is operationally ready for a real Changesets-driven release once `NPM_TOKEN` and repository publish permissions are available
 
 ## Context
 
-- Hydration hardening, workspace repair, serializer alignment, API docs, usage examples, release scaffolding, desktop snapping, focus traversal, and accessibility improvements are complete
-- README now documents the exported public APIs for `@window-manager/core` and `@window-manager/react`
-- `docs/examples.md` now documents multiple concrete usage paths without adding another app
-- The next quality gap in `ai/tasks.md` is non-core test coverage
-- This next task is inferred from `ai/tasks.md`
+- Non-core React/playground test coverage is complete
+- The user chose to keep the current release behavior:
+  - pushes to `main` should continue driving the release workflow
+  - Changesets should continue opening/updating version PRs
+  - merges of prepared version changes should continue publishing when `NPM_TOKEN` is present
+- External publish validation is still blocked by secrets and repository-side npm access
 
 ## Relevant Files
 
-- `packages/react/src/index.tsx`
-- `packages/react/tests/index.test.tsx`
-- `apps/playground/src/main.tsx`
-- `apps/playground/src/persistence.ts`
-- `apps/playground/src/persistence.test.ts`
-- `apps/playground/vite.config.ts`
-- `packages/core/tests/core.test.ts`
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
+- `docs/releasing.md`
 - `package.json`
-- `packages/react/package.json`
-- `vitest.config.ts`
+- `.changeset/config.json`
+- `.changeset/bright-tables-shave.md`
 - `ai/tasks.md`
 
 ## Constraints
 
-- Prefer the smallest test scaffold that fits the repo
-- Keep business rules tested primarily in `packages/core`; adapter tests should cover wiring and integration
-- Avoid introducing a heavyweight test framework unless the current toolchain cannot cover the target area
+- Preserve the current publish-on-`main` behavior
+- Keep release automation Changesets-based
+- Avoid introducing a new release model without explicit user approval
+- Distinguish between local setup hardening and true external publish validation
 
 ## Definition Of Done
 
-- There is at least one concrete automated test path beyond the existing core reducer/math coverage
-- The chosen test location and approach fit the current workspace and tooling
-- The change is reflected in the AI continuity files
+- CI and release workflow steps are aligned with the current repository expectations
+- The release path is documented clearly enough for a human to supply secrets and run the first publish
+- The remaining external blockers are explicit in the AI continuity files
 
 ## Notes
 
 - Completed in this session:
-  - added React adapter tests for provider-backed hooks and missing-provider failure
-  - extracted playground persistence bootstrap into `apps/playground/src/persistence.ts`
-  - added playground persistence tests for hydration and write-back behavior
-  - added root Vitest workspace aliases and matching playground Vite aliases so package-local `vitest run` resolves workspace source entries
+  - aligned CI and release installs to `pnpm install --frozen-lockfile`
+  - added release workflow concurrency protection
+  - added `pnpm build:packages` as a publishable-package preflight build command
+  - expanded `docs/releasing.md` with current behavior, prerequisites, and a release readiness checklist
 - Verification completed with:
   - `pnpm.cmd -r test`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
-- Next suggested task from `ai/tasks.md`:
-  - validate the release workflow with real CI secrets when publishing is intended
-- Previous inferred task completed:
-  - hydrated state sanitization now validates structure, repairs ordering, and clamps rects
-  - playground persistence now stores `instance.serialize()` output instead of rebuilding the JSON envelope
-  - README now documents the current exported APIs of `@window-manager/core` and `@window-manager/react`
-  - `docs/examples.md` now documents multiple implementation-backed usage paths
-  - Changesets now manages versioning and release scaffolding for the workspace packages
-  - desktop-edge snapping is implemented in the core and covered by tests
-  - keyboard focus traversal is implemented in the core and exposed in the playground
-  - playground accessibility was improved with labels, roles, and visible focus cues
-- Targeted core verification succeeded with:
-  - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
-- Direct package-level typechecks now pass for `core`, `react`, and `playground`
+  - `pnpm.cmd build:packages`
+- Remaining external step:
+  - run the release workflow in GitHub with a real `NPM_TOKEN` and package publish permissions
+- Next suggested task from `ai/tasks.md` once release credentials are available or this work is deferred:
+  - improve performance for larger numbers of windows

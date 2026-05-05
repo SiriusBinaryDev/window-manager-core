@@ -5,6 +5,7 @@
     "packageManager":  "pnpm@10.13.1",
     "scripts":  {
                     "build":  "pnpm -r build",
+                    "build:packages":  "pnpm --filter @window-manager/core --filter @window-manager/react build",
                     "changeset":  "changeset",
                     "dev":  "pnpm --filter @window-manager/playground dev",
                     "release":  "pnpm build \u0026\u0026 changeset publish",
