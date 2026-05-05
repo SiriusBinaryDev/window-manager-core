@@ -71,6 +71,7 @@
   - `useDesktop`
   - `useTaskbar`
   - `useVisibleWindows`
+  - adapter subscriptions now use stable manager-state snapshots before applying selectors, avoiding rerender loops for derived arrays
 - Playground supports:
   - window creation
   - pointer drag
@@ -89,8 +90,8 @@
 - `docs/examples.md` now documents multiple concrete usage paths for the current API
 - Test coverage now includes:
   - core lifecycle, z-order, min-size enforcement, serialization, malformed hydration, closed-window restore, and maximize bounds
-  - React adapter provider/hook wiring and missing-provider failure
-  - playground persistence hydration and write-back behavior
+  - React adapter provider/hook wiring, missing-provider failure, and live subscription rerenders
+  - playground persistence hydration/write-back plus DOM interaction coverage for create and restore flows
 
 ## In Progress
 
@@ -118,8 +119,8 @@
 ## Current Development Focus
 
 - Inferred focus from repo docs and backlog artifacts:
-  - expand UI interaction coverage beyond the current persistence and adapter wiring tests
   - add more performance work only if further hotspots appear after measurement
+  - add advanced selectors or adapter optimizations if render pressure appears
   - revisit release validation later when publishing is back in scope
 
 ## Notes For Next Session
@@ -165,7 +166,9 @@
 - Playground persistence was updated in `apps/playground/src/main.tsx` to reuse `instance.serialize()`
 - Playground persistence setup now lives in `apps/playground/src/persistence.ts`
 - React adapter coverage now lives in `packages/react/tests/index.test.tsx`
+- React adapter live subscription coverage now also lives in `packages/react/tests/subscription.test.tsx`
 - Playground coverage now lives in `apps/playground/src/persistence.test.ts`
+- Playground DOM interaction coverage now also lives in `apps/playground/src/App.test.tsx`
 - The latest core performance pass optimized `packages/core/src/reducer.ts` to preserve state identity for common no-op operations and to batch desktop updates
 - Window capabilities now include `minimizable` and `maximizable`, with core enforcement and matching disabled controls in the playground
 - Focus policy is now documented and covered by core regression tests

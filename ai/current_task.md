@@ -2,7 +2,7 @@
 
 ## Title
 
-- Formalize focus policy behavior
+- Expand React/playground interaction coverage beyond persistence and provider-hook wiring
 
 ## Status
 
@@ -10,46 +10,49 @@
 
 ## Objective
 
-- Turn the existing focus behavior into an explicit product contract so focus traversal, activation, minimize/close promotion, and restore semantics are documented and regression-tested
+- Add DOM-backed tests that exercise real React adapter subscriptions and real playground interactions instead of only server-rendered hook snapshots and persistence bootstrap logic
 
 ## Context
 
 - Release validation remains deferred
-- The current implementation already had a de facto focus model, but it was only partially documented and lightly tested
-- The goal of this pass was to make that behavior explicit rather than invent a new policy
+- Previous non-core coverage only proved provider wiring and persistence bootstrap behavior
+- This pass needed to cover actual rerender/subscription behavior and user-driven playground interactions
 
 ## Relevant Files
 
-- `packages/core/src/reducer.ts`
-- `packages/core/tests/core.test.ts`
-- `README.md`
-- `docs/state-model.md`
+- `packages/react/src/index.tsx`
+- `packages/react/tests/index.test.tsx`
+- `packages/react/tests/subscription.test.tsx`
+- `apps/playground/src/App.tsx`
+- `apps/playground/src/App.test.tsx`
+- `apps/playground/src/main.tsx`
+- `package.json`
 
 ## Constraints
 
-- Preserve the current focus behavior chosen by the user
-- Keep the logic in `packages/core`
-- Prefer clarifying and locking behavior over adding new surface area
+- Keep the added test tooling minimal
+- Prefer testing real interactions over duplicating core reducer assertions in UI tests
+- Keep behavior rules in the core and use adapter/playground tests for integration wiring
 
 ## Definition Of Done
 
-- the current focus policy is documented as canonical behavior
-- core tests cover the key focus transitions and skip rules
-- shared focusability checks are explicit in the reducer
-- AI continuity files reflect the completed task
+- React adapter tests cover live subscription-driven rerenders
+- Playground tests cover at least one real UI creation flow and one real restore/focus flow
+- The chosen test setup fits the current workspace without introducing a heavyweight UI testing stack
+- AI continuity files reflect the result
 
 ## Notes
 
 - Completed in this session:
-  - extracted a shared focusability rule in the reducer for visible, focusable windows
-  - added tests for traversal skipping minimized/closed windows
-  - added tests for direct focus rejection on minimized windows
-  - added tests for active-window promotion on minimize/close
-  - added tests for restore bringing a window to front and making it active
-  - documented the canonical focus policy in README and `docs/state-model.md`
+  - added `jsdom` as the minimal DOM test environment dependency
+  - extracted the playground UI into `apps/playground/src/App.tsx` so it can be rendered in tests without bootstrapping side effects
+  - added a React adapter subscription test that proves hook consumers rerender from manager updates
+  - added playground interaction tests for toolbar-driven window creation and taskbar-driven restore
+  - fixed a real adapter bug in `packages/react/src/index.tsx` by subscribing `useSyncExternalStore` to the manager state object instead of unstable derived selector outputs
 - Verification completed with:
-  - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
+  - `.\\node_modules\\.bin\\vitest.cmd run packages\\react\\tests\\subscription.test.tsx apps\\playground\\src\\App.test.tsx --pool vmThreads --maxWorkers 1`
   - `pnpm.cmd -r test`
-- Next suggested local feature task from `ai/tasks.md`:
-  - expand React/playground interaction coverage beyond persistence and provider-hook wiring
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
+- Next suggested local task from `ai/tasks.md`:
+  - add advanced selectors or adapter optimizations if render pressure appears

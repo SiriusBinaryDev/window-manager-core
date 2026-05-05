@@ -2,11 +2,10 @@
 
 ## Now
 
-- Expand React/playground interaction coverage beyond persistence and provider-hook wiring
+- Add advanced selectors or adapter optimizations if render pressure appears
 
 ## Next
 
-- Add advanced selectors or adapter optimizations if render pressure appears
 - Improve performance for larger numbers of windows if new measured hotspots appear
 - Validate the release workflow with real CI secrets when publishing is intended
   - local workflow hardening and operator docs are complete

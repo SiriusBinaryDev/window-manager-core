@@ -36,12 +36,13 @@ function useManagerContext(): WindowManager {
 
 function useStore<T>(selector: (state: WindowManagerState) => T): T {
   const manager = useManagerContext();
-
-  return useSyncExternalStore(
+  const state = useSyncExternalStore(
     manager.subscribe,
-    () => selector(manager.getState()),
-    () => selector(manager.getState()),
+    manager.getState,
+    manager.getState,
   );
+
+  return selector(state);
 }
 
 export function useWindowManager(): WindowManager {
