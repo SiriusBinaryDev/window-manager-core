@@ -58,14 +58,21 @@
   - minimize/maximize/close
   - localStorage persistence via `createWindowManager().serialize()` / `.hydrate()`
   - accessibility affordances such as roles, labels, focusable windows, and visible focus rings
+- Playground persistence bootstrap is isolated in `apps/playground/src/persistence.ts` and covered by tests
 - Source-level TypeScript resolution now works across the workspace through root `tsconfig` path mappings
+- Vitest workspace source resolution is configured through:
+  - root `vitest.config.ts`
+  - matching aliases in `apps/playground/vite.config.ts`
 - README now includes a concise public API reference for `@window-manager/core` and `@window-manager/react`
 - `docs/examples.md` now documents multiple concrete usage paths for the current API
-- Core test coverage exists for lifecycle, z-order, min-size enforcement, serialization, malformed hydration, closed-window restore, and maximize bounds
+- Test coverage now includes:
+  - core lifecycle, z-order, min-size enforcement, serialization, malformed hydration, closed-window restore, and maximize bounds
+  - React adapter provider/hook wiring and missing-provider failure
+  - playground persistence hydration and write-back behavior
 
 ## In Progress
 
-- No active product feature work inferred from the current worktree
+- No active product feature work inferred from the current worktree; the next backlog item is release-workflow validation when publishing credentials are available
 
 ## Not Implemented
 
@@ -77,7 +84,9 @@
 ## Known Issues / Risks
 
 - Window capability flags currently cover only `resizable`, `movable`, and `closable`
-- Tests are present only for `packages/core`; no React or playground tests were found
+- UI-side automated coverage is still basic:
+  - React tests currently validate server-rendered hook/provider wiring only
+  - playground tests currently validate persistence bootstrap only, not pointer or keyboard interactions
 - Hydration policy is still an open design choice:
   - current behavior sanitizes many invalid payload details
   - fundamentally invalid structures are rejected with `null`
@@ -89,9 +98,9 @@
 ## Current Development Focus
 
 - Inferred focus from repo docs and backlog artifacts:
-  - improve test and verification coverage beyond direct package-level checks
   - validate the new release scaffolding in real CI/publishing credentials
-  - expand non-core coverage beyond the current core-only tests
+  - improve performance for larger numbers of windows
+  - expand UI interaction coverage beyond the current persistence and adapter wiring tests when needed
 
 ## Notes For Next Session
 
@@ -114,5 +123,13 @@
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
 - The targeted core suite passed via:
   - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
+- The workspace test command now passes with:
+  - `pnpm.cmd -r test`
+- Direct typechecks still pass for the touched non-core packages:
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
 - Playground persistence was updated in `apps/playground/src/main.tsx` to reuse `instance.serialize()`
+- Playground persistence setup now lives in `apps/playground/src/persistence.ts`
+- React adapter coverage now lives in `packages/react/tests/index.test.tsx`
+- Playground coverage now lives in `apps/playground/src/persistence.test.ts`
 - `changeset status` passed after adding the pending release note

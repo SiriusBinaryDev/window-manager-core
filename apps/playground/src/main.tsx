@@ -1,11 +1,9 @@
-import { createWindowManager } from '@window-manager/core';
 import { WindowManagerProvider, useTaskbar, useVisibleWindows, useWindowManager } from '@window-manager/react';
 import { StrictMode, useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { createPersistedWindowManager } from './persistence';
 import './styles.css';
-
-const STORAGE_KEY = 'window-manager-core:playground-state';
 
 function App() {
   const manager = useWindowManager();
@@ -174,17 +172,7 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
 }
 
 function Root() {
-  const manager = useMemo(() => {
-    const instance = createWindowManager();
-    const serialized = localStorage.getItem(STORAGE_KEY);
-    if (serialized) {
-      instance.hydrate(serialized);
-    }
-    instance.subscribe(() => {
-      localStorage.setItem(STORAGE_KEY, instance.serialize());
-    });
-    return instance;
-  }, []);
+  const manager = useMemo(() => createPersistedWindowManager(localStorage), []);
 
   return (
     <WindowManagerProvider manager={manager}>

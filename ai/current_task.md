@@ -6,7 +6,7 @@
 
 ## Status
 
-- Not started
+- Completed
 
 ## Objective
 
@@ -23,9 +23,15 @@
 ## Relevant Files
 
 - `packages/react/src/index.tsx`
+- `packages/react/tests/index.test.tsx`
 - `apps/playground/src/main.tsx`
+- `apps/playground/src/persistence.ts`
+- `apps/playground/src/persistence.test.ts`
+- `apps/playground/vite.config.ts`
 - `packages/core/tests/core.test.ts`
 - `package.json`
+- `packages/react/package.json`
+- `vitest.config.ts`
 - `ai/tasks.md`
 
 ## Constraints
@@ -42,6 +48,17 @@
 
 ## Notes
 
+- Completed in this session:
+  - added React adapter tests for provider-backed hooks and missing-provider failure
+  - extracted playground persistence bootstrap into `apps/playground/src/persistence.ts`
+  - added playground persistence tests for hydration and write-back behavior
+  - added root Vitest workspace aliases and matching playground Vite aliases so package-local `vitest run` resolves workspace source entries
+- Verification completed with:
+  - `pnpm.cmd -r test`
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
+- Next suggested task from `ai/tasks.md`:
+  - validate the release workflow with real CI secrets when publishing is intended
 - Previous inferred task completed:
   - hydrated state sanitization now validates structure, repairs ordering, and clamps rects
   - playground persistence now stores `instance.serialize()` output instead of rebuilding the JSON envelope

@@ -58,7 +58,11 @@
 
 - Test runner: `vitest`
 - Current test focus is core reducer/math/serialization behavior
-- No clear convention inferred yet for React or playground tests
+- Non-core tests may live close to the package they validate:
+  - `packages/react/tests` for adapter tests
+  - `apps/playground/src/*.test.ts` for targeted playground coverage
+- Workspace test resolution uses source aliases for `@window-manager/core` and `@window-manager/react`
+- If a package has its own Vite config and runs `vitest` locally, preserve the workspace source aliases there as well
 
 ## Editing Guidance For Future Sessions
 

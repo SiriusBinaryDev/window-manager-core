@@ -2,16 +2,15 @@
 
 ## Now
 
-- Add at least basic tests for the React adapter and/or the playground integration
+- Validate the release workflow with real CI secrets when publishing is intended
 
 ## Next
 
-- Validate the release workflow with real CI secrets when publishing is intended
 - Improve performance for larger numbers of windows
 
 ## Later
 
-- Improve performance for larger numbers of windows
+- Expand React/playground interaction coverage beyond persistence and provider-hook wiring
 - Expand window flags if minimization/maximization capabilities need to be configurable
 - Formalize focus policy behavior
 - Add advanced selectors or adapter optimizations if render pressure appears

@@ -11,3 +11,4 @@
 - Decide whether `manager.serialize()` should become the only persistence path used by the playground.
 - Decide whether future examples belong in a new `apps/examples` workspace or inside `apps/playground`.
 - If publishing is enabled, decide whether release management uses `changesets` or a different workflow.
+- Consider consolidating shared workspace source aliases so Vite and Vitest configs do not drift across packages.
