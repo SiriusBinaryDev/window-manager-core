@@ -30,6 +30,8 @@
 - Derived reads belong in selectors
 - Persistence format is versioned and centralized in `packages/core/src/serialization.ts`
 - Geometry behavior is isolated in `packages/core/src/math.ts`
+- Desktop isolation is the primary ownership boundary; monitor layouts live inside each desktop workspace
+- Compatibility aliases may remain in the public API when the state model evolves, for example `setDesktop(...)` and `useDesktop()` now map to the active monitor model
 
 ## Naming Conventions
 

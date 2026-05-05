@@ -2,6 +2,8 @@ import type {
   CreateWindowPayload,
   DesktopId,
   DesktopState,
+  MonitorId,
+  MonitorState,
   ResizeEdge,
   WindowId,
   WindowManagerCommand,
@@ -20,6 +22,14 @@ export const commands = {
   switchDesktop: (id: DesktopId): WindowManagerCommand => ({
     type: 'SWITCH_DESKTOP',
     payload: { id },
+  }),
+  createMonitor: (id: MonitorId, monitor?: MonitorState, desktopId?: DesktopId): WindowManagerCommand => ({
+    type: 'CREATE_MONITOR',
+    payload: { id, ...(monitor ? { monitor } : {}), ...(desktopId ? { desktopId } : {}) },
+  }),
+  switchMonitor: (id: MonitorId, desktopId?: DesktopId): WindowManagerCommand => ({
+    type: 'SWITCH_MONITOR',
+    payload: { id, ...(desktopId ? { desktopId } : {}) },
   }),
   focusWindow: (id: WindowId): WindowManagerCommand => ({
     type: 'FOCUS_WINDOW',
@@ -55,9 +65,13 @@ export const commands = {
     type: 'CLOSE_WINDOW',
     payload: { id },
   }),
-  setDesktop: (desktop: DesktopState, desktopId?: DesktopId): WindowManagerCommand => ({
+  setMonitor: (monitor: MonitorState, desktopId?: DesktopId, monitorId?: MonitorId): WindowManagerCommand => ({
+    type: 'SET_MONITOR',
+    payload: { monitor, ...(desktopId ? { desktopId } : {}), ...(monitorId ? { monitorId } : {}) },
+  }),
+  setDesktop: (desktop: DesktopState, desktopId?: DesktopId, monitorId?: MonitorId): WindowManagerCommand => ({
     type: 'SET_DESKTOP',
-    payload: { desktop, ...(desktopId ? { desktopId } : {}) },
+    payload: { desktop, ...(desktopId ? { desktopId } : {}), ...(monitorId ? { monitorId } : {}) },
   }),
   hydrateState: (payload: WindowManagerState): WindowManagerCommand => ({
     type: 'HYDRATE_STATE',

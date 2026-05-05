@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import {
+  useActiveMonitorId,
   useActiveDesktopId,
   WindowManagerProvider,
   useDesktop,
@@ -18,6 +19,7 @@ function Snapshot({ expectedManager }: { expectedManager: WindowManager }): Reac
   const desktop = useDesktop();
   const desktops = useDesktops();
   const activeDesktopId = useActiveDesktopId();
+  const activeMonitorId = useActiveMonitorId();
   const taskbar = useTaskbar();
   const visibleWindows = useVisibleWindows();
   const windowEntity = useWindow('alpha');
@@ -26,6 +28,7 @@ function Snapshot({ expectedManager }: { expectedManager: WindowManager }): Reac
     <div
       data-manager-match={manager === expectedManager ? 'true' : 'false'}
       data-active-desktop-id={activeDesktopId}
+      data-active-monitor-id={activeMonitorId}
       data-desktop-width={String(desktop.size.width)}
       data-desktop-count={String(desktops.length)}
       data-taskbar-count={String(taskbar.length)}
@@ -59,6 +62,7 @@ describe('@window-manager/react', () => {
 
     expect(markup).toContain('data-manager-match="true"');
     expect(markup).toContain('data-active-desktop-id="default"');
+    expect(markup).toContain('data-active-monitor-id="default"');
     expect(markup).toContain('data-desktop-width="900"');
     expect(markup).toContain('data-desktop-count="1"');
     expect(markup).toContain('data-taskbar-count="2"');

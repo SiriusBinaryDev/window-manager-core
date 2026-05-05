@@ -3,6 +3,8 @@ import {
   selectors,
   type DesktopId,
   type DesktopWorkspace,
+  type MonitorId,
+  type MonitorState,
   type WindowEntity,
   type WindowId,
   type WindowManager,
@@ -55,8 +57,24 @@ export function useWindow(id: WindowId): WindowEntity | null {
   return useStore((state) => selectors.getWindowById(state, id));
 }
 
-export function useDesktop(): DesktopWorkspace['desktop'] {
-  return useStore((state) => selectors.getActiveDesktop(state)?.desktop ?? selectors.getDesktops(state)[0]!.desktop);
+export function useTopModalWindow(): WindowEntity | null {
+  return useStore((state) => selectors.getTopModalWindow(state));
+}
+
+export function useMonitor(): MonitorState {
+  return useStore((state) => {
+    const activeMonitor = selectors.getActiveMonitor(state);
+    if (activeMonitor) {
+      return activeMonitor;
+    }
+
+    const firstDesktop = selectors.getDesktops(state)[0]!;
+    return firstDesktop.monitors[firstDesktop.activeMonitorId] ?? Object.values(firstDesktop.monitors)[0]!;
+  });
+}
+
+export function useDesktop(): MonitorState {
+  return useMonitor();
 }
 
 export function useDesktops(): DesktopWorkspace[] {
@@ -65,6 +83,17 @@ export function useDesktops(): DesktopWorkspace[] {
 
 export function useActiveDesktopId(): DesktopId {
   return useStore((state) => state.activeDesktopId);
+}
+
+export function useActiveMonitorId(): MonitorId {
+  return useStore((state) => {
+    const activeDesktop = selectors.getActiveDesktop(state);
+    if (activeDesktop) {
+      return activeDesktop.activeMonitorId;
+    }
+
+    return Object.values(state.desktops)[0]!.activeMonitorId;
+  });
 }
 
 export function useTaskbar(): WindowEntity[] {

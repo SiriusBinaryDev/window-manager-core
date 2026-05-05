@@ -2,7 +2,7 @@
 
 ## Title
 
-- Implement multi-monitor support
+- Release validation for the first publishable feature set
 
 ## Status
 
@@ -10,53 +10,47 @@
 
 ## Objective
 
-- Extend the workspace model so the manager can reason about more than one monitor while preserving the completed multi-desktop isolation rules
+- Validate the completed core feature set and release workflow before the first public publish
 
 ## Context
 
-- Multi-desktop support is complete:
-  - each window belongs to exactly one desktop through `window.desktopId`
-  - each desktop maintains its own `orderedWindowIds` and `activeWindowId`
-  - `createDesktop(id, config?)` and `switchDesktop(id)` now exist
-  - `setDesktop(payload, desktopId?)` updates the active desktop by default or a specified desktop when requested
-  - old single-desktop persisted state migrates forward into the `default` workspace
-  - `focusWindow(id)` and `restoreWindow(id)` auto-switch to the target window's desktop
-- The fixed feature-complete publish gate remains:
+- The fixed publish-gate feature list is complete:
   - multi-desktop support
   - multi-monitor support
   - modal windows
-- When that feature list is complete, tell the user explicitly that the important/core features are done and publishing can move to release validation
+- The important/core feature set is now done, so work can move to release validation
+- Modal support is implemented:
+  - modal windows use `ownerWindowId`
+  - a modal inherits the desktop and monitor of its owner
+  - only the topmost visible modal in a desktop can receive focus or participate in traversal
+  - closing an owner window also closes its modal descendants
+  - persisted state version is now `4`
+  - version `1`, `2`, and `3` payloads migrate into the current state shape
+- The playground regression where minimize, maximize, and close buttons did not work was fixed by isolating those controls from the drag surface and covering them with tests
 
 ## Relevant Files
 
-- `packages/core/src/types.ts`
-- `packages/core/src/reducer.ts`
-- `packages/core/src/commands.ts`
-- `packages/core/src/createWindowManager.ts`
-- `packages/core/src/selectors.ts`
-- `packages/core/src/serialization.ts`
-- `packages/core/tests/core.test.ts`
-- `packages/react/src/index.tsx`
-- `apps/playground/src/App.tsx`
+- `.github/workflows/release.yml`
+- `docs/releasing.md`
 - `README.md`
-- `docs/state-model.md`
-- `docs/examples.md`
+- `package.json`
+- `packages/core/package.json`
+- `packages/react/package.json`
+- `.changeset/`
 
 ## Constraints
 
-- Keep the new monitor model compatible with the completed multi-desktop workspace isolation
-- Preserve backward compatibility where practical
-- Continue migrating persisted state instead of discarding it if the state shape evolves again
-- Ask the user before choosing an important monitor-model or focus-behavior decision
+- Do not re-open unrelated feature work during release validation
+- Keep release changes scoped to packaging, workflow, documentation, and verification
+- Ask the user before making any publish-policy or versioning workflow change that is not already implied by the current Changesets setup
 
 ## Definition Of Done
 
-- monitor-aware state and commands exist in the core
-- selectors and manager methods understand the active monitor model
-- persistence and migration strategy stay coherent with the new shape
-- the playground exposes a basic monitor-aware flow if the public API changes
-- docs and AI continuity files reflect the new behavior
+- release docs match the implemented API
+- package metadata and build outputs are coherent
+- release workflow assumptions are explicit
+- remaining publish blockers are documented clearly if external access is still required
 
 ## Notes
 
-- Multi-desktop support was completed and verified with direct package typechecks plus targeted core, React, and playground tests
+- Latest verification passed with direct package typechecks, `pnpm -r test`, and `pnpm build:packages`

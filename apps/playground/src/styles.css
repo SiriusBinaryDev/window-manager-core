@@ -43,6 +43,13 @@ button:focus-visible,
   box-shadow: 0 12px 30px rgb(15 23 42 / 40%);
 }
 
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(15 23 42 / 28%);
+  pointer-events: auto;
+}
+
 .titlebar {
   display: flex;
   justify-content: space-between;

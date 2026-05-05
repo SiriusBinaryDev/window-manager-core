@@ -3,22 +3,11 @@
 ## Implemented
 
 - AI continuity layer present in `ai/`
-- Repository lockfile policy aligned with `pnpm`; `pnpm-lock.yaml` is no longer ignored
-- `pnpm-lock.yaml` has been generated after a clean `pnpm install`
 - Monorepo with three workspaces:
   - `@window-manager/core`
   - `@window-manager/react`
   - `@window-manager/playground`
-- Release/versioning automation now uses Changesets:
-  - `@changesets/cli` is installed at the workspace root
-  - `.changeset/config.json` is configured for public scoped packages
-  - `.github/workflows/release.yml` creates version PRs and publishes when `NPM_TOKEN` is available
-  - CI and release installs now use `pnpm install --frozen-lockfile`
-  - release runs now use workflow concurrency to avoid overlapping publish jobs on the same ref
-  - a real pending changeset exists for the current package changes
-- Release preflight now includes:
-  - root script `pnpm build:packages` for the publishable packages only
-  - expanded operator documentation in `docs/releasing.md`
+- Release/versioning automation uses Changesets
 - Core window lifecycle commands and reducer cases:
   - create
   - focus
@@ -28,84 +17,83 @@
   - minimize
   - restore
   - close
-  - set desktop
   - hydrate state
-- Window capabilities now cover:
+- Desktop and monitor topology commands exist:
+  - `createDesktop(id, desktop?)`
+  - `switchDesktop(id)`
+  - `createMonitor(id, monitor?, desktopId?)`
+  - `switchMonitor(id, desktopId?)`
+  - `setMonitor(payload, desktopId?, monitorId?)`
+  - `setDesktop(payload, desktopId?, monitorId?)` as a compatibility alias
+- Window capabilities cover:
   - `resizable`
   - `movable`
   - `closable`
   - `minimizable`
   - `maximizable`
-- Desktop snap primitives are implemented in the core:
-  - optional desktop-edge snapping via `desktop.snap.threshold`
-  - snapping applies to move and resize operations
-- Core reducer hot paths now avoid several no-op updates:
-  - focusing the already active front window returns the same state
-  - zero-delta moves and unchanged clamped resizes return the same state
-  - single-window focus rotation returns the same state
-  - `SET_DESKTOP` batches changed windows in one pass and skips unchanged desktop updates
-- Keyboard focus traversal is implemented:
-  - core commands and manager methods for next/previous window focus
-  - playground buttons and shortcuts for traversal
-  - focus policy is now explicit:
-    - only visible windows can receive focus
-    - traversal skips minimized and closed windows
-    - minimizing or closing the active window promotes the topmost remaining visible window
-    - restoring a window brings it to front and makes it active
-- Desktop-bound clamping during create, move, resize, restore, and desktop updates
-- Hydration sanitization now:
-  - validates envelope structure
-  - normalizes invalid stacking and active-window references
-  - clamps hydrated rects into desktop bounds
-  - sanitizes reducer-driven hydrate payloads
+- Desktop-edge snapping is implemented per monitor through `monitor.snap.threshold`
+- Core reducer hot paths still avoid common no-op updates
+- Keyboard focus traversal is implemented
+- Multi-desktop support is implemented:
+  - each window belongs to exactly one desktop through `window.desktopId`
+  - state stores `desktops` plus `activeDesktopId`
+  - each desktop keeps its own `orderedWindowIds` and `activeWindowId`
+  - `focusWindow(id)` and `restoreWindow(id)` auto-switch desktops when needed
+- Multi-monitor support is implemented:
+  - each desktop workspace now owns `monitors` and `activeMonitorId`
+  - each window belongs to exactly one monitor through `window.monitorId`
+  - new windows default to the active monitor in the target desktop
+  - `focusWindow(id)`, `restoreWindow(id)`, active-window promotion, and traversal move `activeMonitorId` to the focused window's monitor when needed
+  - create, move, resize, maximize, restore, and monitor updates now clamp against the assigned monitor bounds
+  - version `2` payloads migrate into a default monitor per desktop
+  - version `1` payloads still migrate into the `default` desktop and `default` monitor
+- Modal windows are implemented:
+  - modal windows use `ownerWindowId`
+  - a modal inherits the desktop and monitor of its owner
+  - only the topmost visible modal in a desktop can receive focus or participate in traversal
+  - closing an owner window also closes its modal descendants
+  - persisted state version is now `4`
+  - version `3` payloads migrate into the current modal-aware shape
+- Hydration sanitization validates structure, normalizes references, and clamps hydrated rects into monitor bounds
 - Imperative `createWindowManager()` facade with subscription and persistence helpers
 - Core selectors for:
   - single window lookup
   - desktop lookup
   - active desktop lookup
   - desktop list lookup
+  - monitor lookup
+  - active monitor lookup
   - active window
   - visible windows
   - taskbar items
-- Multi-desktop support is implemented:
-  - windows belong to exactly one desktop workspace through `window.desktopId`
-  - state now stores `desktops` plus `activeDesktopId`
-  - each desktop keeps its own `orderedWindowIds` and `activeWindowId`
-  - core commands now include `createDesktop(id, config?)` and `switchDesktop(id)`
-  - `setDesktop(payload, desktopId?)` updates the active desktop by default or an explicit desktop when requested
-  - `focusWindow(id)` and `restoreWindow(id)` auto-switch desktops when the target window lives elsewhere
-  - legacy single-desktop persisted state now migrates forward into the `default` workspace
 - React adapter:
   - `WindowManagerProvider`
   - `useWindowManager`
   - `useWindow`
-  - `useDesktop`
+  - `useMonitor`
+  - `useDesktop` as compatibility alias for the active monitor
   - `useDesktops`
   - `useActiveDesktopId`
+  - `useActiveMonitorId`
+  - `useTopModalWindow`
   - `useTaskbar`
   - `useVisibleWindows`
-  - adapter subscriptions now use stable manager-state snapshots before applying selectors, avoiding rerender loops for derived arrays
 - Playground supports:
   - window creation
+  - modal window creation from the active window
+  - desktop creation and switching
+  - monitor creation and switching within the active desktop
+  - modal backdrop rendering
   - pointer drag
   - bottom-right resize
   - focus
-  - minimize/maximize/close
-  - disabled action controls when window capabilities disallow minimize/maximize/close
-  - localStorage persistence via `createWindowManager().serialize()` / `.hydrate()`
-  - accessibility affordances such as roles, labels, focusable windows, and visible focus rings
-  - desktop creation and desktop switching controls for the active workspace
-- Playground persistence bootstrap is isolated in `apps/playground/src/persistence.ts` and covered by tests
-- Source-level TypeScript resolution now works across the workspace through root `tsconfig` path mappings
-- Vitest workspace source resolution is configured through:
-  - root `vitest.config.ts`
-  - matching aliases in `apps/playground/vite.config.ts`
-- README now includes a concise public API reference for `@window-manager/core` and `@window-manager/react`
-- `docs/examples.md` now documents multiple concrete usage paths for the current API
-- Test coverage now includes:
-  - core lifecycle, z-order, min-size enforcement, serialization, malformed hydration, closed-window restore, and maximize bounds
-  - React adapter provider/hook wiring, missing-provider failure, and live subscription rerenders
-  - playground persistence hydration/write-back plus DOM interaction coverage for create and restore flows
+  - minimize, maximize, close
+  - localStorage persistence
+- README and docs reflect the multi-monitor API
+- Test coverage includes:
+  - core lifecycle, focus, snapping, serialization, migration, and monitor-aware behavior
+  - React adapter provider/hook wiring and live subscription rerenders
+  - playground persistence plus desktop and monitor UI interactions
 
 ## In Progress
 
@@ -113,82 +101,33 @@
 
 ## Not Implemented
 
-- Multi-monitor support
-- Modal windows / advanced focus policies
+- Advanced focus policies beyond the current modal rules
 
 ## Known Issues / Risks
 
-- UI-side automated coverage is still basic:
-  - React tests currently validate server-rendered hook/provider wiring only
-  - playground tests currently validate persistence bootstrap only, not pointer or keyboard interactions
-- Hydration policy is still an open design choice:
-  - current behavior sanitizes many invalid payload details
-  - fundamentally invalid structures are rejected with `null`
-- `pnpm typecheck` from the root still fails in this Windows environment with a shell/process error from recursive `pnpm`, even though direct `tsc` runs for each package succeed
+- UI-side automated coverage is still basic compared with the core coverage
+- Hydration policy still favors sanitizing many invalid details instead of rejecting every imperfect payload
+- `pnpm typecheck` from the root still fails in this Windows environment with a recursive `pnpm` shell/process issue, even though direct package `tsc --noEmit` runs succeed
 - Release publishing still depends on external setup:
   - `NPM_TOKEN` must exist in GitHub Actions secrets
-  - public package access is currently inferred from the package scope and library intent
+  - publish access must exist for the package scope
 
 ## Current Development Focus
 
-- Inferred focus from repo docs and backlog artifacts:
-  - implement multi-monitor support as the next publish-gate feature
-  - then implement modal windows to complete the fixed first-publish feature list
-  - revisit release validation after the publish-gate feature list is complete
+- The important/core feature set is complete
+- Move to release validation for the first publishable feature set
+- Revisit external publish setup after local validation
 
 ## Notes For Next Session
 
-- Start in `packages/core` for any behavior change; update React/playground only after the core API is settled
+- Start in `packages/core` for any behavior change; update React and playground only after the core API is settled
 - Commit each completed feature in its own separate commit
 - Ask the user before making an important implementation decision when more than one reasonable direction exists
-- Hydration hardening was implemented in `packages/core/src/serialization.ts` and enforced in `packages/core/src/reducer.ts`
-- Workspace setup was repaired by reinstalling with `pnpm`; root `package-lock.json` was removed and `pnpm-lock.yaml` was generated
-- Root `tsconfig.base.json` now maps `@window-manager/core` and `@window-manager/react` to source entry points
-- README public API documentation was added based on current exports only
-- `docs/examples.md` adds imperative, reducer, and React persistence examples without creating a second app
-- Desktop snapping is implemented in `packages/core` and documented in `docs/examples.md`
-- Keyboard focus traversal is implemented in `packages/core` and exposed in the playground via buttons and `Alt+Shift+ArrowLeft/ArrowRight`
-- Playground accessibility was improved with labels, roles, focusable windows, and visible focus styles
-- Changesets now manages versioning:
-  - root scripts: `pnpm changeset`, `pnpm version-packages`, `pnpm release`
-  - release preflight script: `pnpm build:packages`
-  - release workflow: `.github/workflows/release.yml`
-  - pending release entry: `.changeset/bright-tables-shave.md`
-- CI and release workflows now install with:
-  - `pnpm install --frozen-lockfile`
-- Release documentation now includes:
-  - current publish-on-`main` behavior
-  - repository secret prerequisites
-  - a release readiness checklist in `docs/releasing.md`
 - Direct typechecks passed with:
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
-- The targeted core suite passed via:
-  - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
-- The workspace test command now passes with:
+- Workspace tests passed with:
   - `pnpm.cmd -r test`
-- The latest core performance pass was verified with:
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
-  - `pnpm.cmd -r test`
-- Publishable package builds now pass with:
+- Publishable package builds passed with:
   - `pnpm.cmd build:packages`
-- Direct typechecks still pass for the touched non-core packages:
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
-- Playground persistence was updated in `apps/playground/src/main.tsx` to reuse `instance.serialize()`
-- Playground persistence setup now lives in `apps/playground/src/persistence.ts`
-- React adapter coverage now lives in `packages/react/tests/index.test.tsx`
-- React adapter live subscription coverage now also lives in `packages/react/tests/subscription.test.tsx`
-- Playground coverage now lives in `apps/playground/src/persistence.test.ts`
-- Playground DOM interaction coverage now also lives in `apps/playground/src/App.test.tsx`
-- The latest core performance pass optimized `packages/core/src/reducer.ts` to preserve state identity for common no-op operations and to batch desktop updates
-- Window capabilities now include `minimizable` and `maximizable`, with core enforcement and matching disabled controls in the playground
-- Focus policy is now documented and covered by core regression tests
-- `changeset status` passed after adding the pending release note
-- Fixed feature-complete publish gate for the first release:
-  - multi-desktop support
-  - multi-monitor support
-  - modal windows
-- After those features are complete, explicitly tell the user the core/important feature set is done so publishing can move to release validation
-- The multi-desktop feature is now complete and verified with direct typechecks plus targeted core, React, and playground tests

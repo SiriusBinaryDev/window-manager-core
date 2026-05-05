@@ -14,9 +14,9 @@ import { createWindowManager } from '@window-manager/core';
 
 const wm = createWindowManager();
 
-wm.setDesktop({
+wm.createMonitor('right', {
   size: { width: 1440, height: 900 },
-  bounds: { minX: 0, minY: 0, maxX: 1440, maxY: 900 },
+  bounds: { minX: 1440, minY: 0, maxX: 2880, maxY: 900 },
   snap: { threshold: 24 },
 });
 
@@ -26,27 +26,42 @@ wm.createWindow({
   rect: { x: 40, y: 40, width: 640, height: 420 },
 });
 
+wm.switchMonitor('right');
 wm.createWindow({
   id: 'terminal',
   title: 'Terminal',
-  rect: { x: 180, y: 120, width: 560, height: 320 },
+  rect: { x: 1500, y: 80, width: 560, height: 320 },
   flags: { minimizable: false, maximizable: false },
 });
 
 wm.createDesktop('docs');
+wm.createMonitor(
+  'vertical',
+  {
+    size: { width: 900, height: 1400 },
+    bounds: { minX: 0, minY: 0, maxX: 900, maxY: 1400 },
+  },
+  'docs',
+);
 wm.createWindow({
   id: 'notes',
   desktopId: 'docs',
+  monitorId: 'vertical',
   title: 'Notes',
 });
 
 wm.focusWindow('terminal');
+wm.createWindow({
+  id: 'confirm-exit',
+  ownerWindowId: 'terminal',
+  title: 'Confirm exit',
+});
 wm.focusNextWindow();
 wm.moveWindow('terminal', 20, 16);
-wm.switchDesktop('docs');
 
 console.log(wm.getState().activeDesktopId);
-console.log(wm.selectors.getActiveDesktop(wm.getState())?.activeWindowId);
+console.log(wm.selectors.getActiveDesktop(wm.getState())?.activeMonitorId);
+console.log(wm.selectors.getActiveMonitor(wm.getState()));
 console.log(wm.selectors.getVisibleWindows(wm.getState()));
 ```
 
@@ -55,9 +70,9 @@ Use this path when:
 - your app already has its own UI layer
 - you want direct command methods instead of a reducer integration
 - you want to serialize and restore state with `serialize()` / `hydrate()`
-- you want optional desktop-edge snapping during move/resize
-- you want keyboard-style focus traversal without coupling to React
-- you want isolated multi-desktop workspaces with explicit desktop switching
+- you want optional monitor-edge snapping during move and resize
+- you want isolated multi-desktop workspaces with per-desktop monitor layouts
+- you want owner-scoped modal behavior enforced in the core
 
 ## 2. Reducer + Commands Integration
 
@@ -75,10 +90,28 @@ let state = createInitialState();
 
 state = windowManagerReducer(
   state,
+  commands.createMonitor('right', {
+    size: { width: 1280, height: 720 },
+    bounds: { minX: 1280, minY: 0, maxX: 2560, maxY: 720 },
+  }),
+);
+
+state = windowManagerReducer(
+  state,
   commands.createWindow({
     id: 'notes',
     title: 'Notes',
-    rect: { x: 60, y: 60, width: 480, height: 300 },
+    monitorId: 'right',
+    rect: { x: 1320, y: 60, width: 480, height: 300 },
+  }),
+);
+
+state = windowManagerReducer(
+  state,
+  commands.createWindow({
+    id: 'confirm-save',
+    ownerWindowId: 'notes',
+    title: 'Confirm save',
   }),
 );
 
@@ -88,17 +121,14 @@ state = windowManagerReducer(state, commands.focusNextWindow());
 
 const taskbar = selectors.getTaskbarItems(state);
 const active = selectors.getActiveWindow(state);
+const activeMonitor = selectors.getActiveMonitor(state);
+const topModal = selectors.getTopModalWindow(state);
 
 console.log(taskbar.map((item) => item.id));
 console.log(active?.id);
+console.log(activeMonitor?.bounds);
+console.log(topModal?.id);
 ```
-
-Use this path when:
-
-- you need pure state transitions
-- you want time-travel/debug tooling outside this library
-- you want to dispatch typed commands from another store or framework
-- you want to trigger focus traversal with command factories
 
 ## 3. Persisted React Integration
 
@@ -109,7 +139,9 @@ import { createWindowManager } from '@window-manager/core';
 import {
   WindowManagerProvider,
   useActiveDesktopId,
+  useActiveMonitorId,
   useDesktops,
+  useTopModalWindow,
   useTaskbar,
   useVisibleWindows,
   useWindowManager,
@@ -121,13 +153,17 @@ const STORAGE_KEY = 'window-manager-example';
 function Desktop() {
   const wm = useWindowManager();
   const activeDesktopId = useActiveDesktopId();
+  const activeMonitorId = useActiveMonitorId();
   const desktops = useDesktops();
+  const topModal = useTopModalWindow();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
 
   return (
     <>
       <div>Active desktop: {activeDesktopId}</div>
+      <div>Active monitor: {activeMonitorId}</div>
+      <div>Top modal: {topModal?.id ?? 'none'}</div>
       <div>{desktops.map((desktop) => desktop.id).join(', ')}</div>
       <button
         onClick={() =>
@@ -139,11 +175,31 @@ function Desktop() {
       >
         New window
       </button>
-      <button onClick={() => wm.focusPreviousWindow()}>
-        Previous window
+      <button
+        onClick={() => {
+          const active = wm.selectors.getActiveWindow(wm.getState());
+          if (!active) {
+            return;
+          }
+
+          wm.createWindow({
+            id: crypto.randomUUID(),
+            ownerWindowId: active.id,
+            title: 'New modal',
+          });
+        }}
+      >
+        New modal
       </button>
-      <button onClick={() => wm.focusNextWindow()}>
-        Next window
+      <button
+        onClick={() =>
+          wm.createMonitor(`monitor-${crypto.randomUUID().slice(0, 4)}`, {
+            size: { width: 1280, height: 720 },
+            bounds: { minX: 1280, minY: 0, maxX: 2560, maxY: 720 },
+          })
+        }
+      >
+        New monitor
       </button>
 
       <pre>{JSON.stringify(windows, null, 2)}</pre>
@@ -176,31 +232,27 @@ export function App() {
 }
 ```
 
-Use this path when:
-
-- React renders the desktop/taskbar/window chrome
-- you want the core rules to stay outside components
-- you want persistence without rebuilding the serialization envelope manually
-- you want to map UI buttons or shortcuts to core focus traversal
-- you want to layer labels, roles, and focusable containers on top of the headless core
-
 ## 4. Reading Derived State
-
-Selectors and React hooks expose slightly different usage styles over the same concepts.
 
 - Core selectors:
   - `getWindowById(state, id)`
   - `getDesktopById(state, id)`
   - `getActiveDesktop(state)`
   - `getDesktops(state)`
-  - `getActiveWindow(state)`
-  - `getVisibleWindows(state)`
-  - `getTaskbarItems(state)`
+  - `getMonitorById(state, id, desktopId?)`
+  - `getActiveMonitor(state, desktopId?)`
+  - `getActiveWindow(state, desktopId?)`
+  - `getTopModalWindow(state, desktopId?)`
+  - `getVisibleWindows(state, desktopId?, monitorId?)`
+  - `getTaskbarItems(state, desktopId?, monitorId?)`
 - React hooks:
   - `useWindow(id)`
+  - `useTopModalWindow()`
+  - `useMonitor()`
   - `useDesktop()`
   - `useDesktops()`
   - `useActiveDesktopId()`
+  - `useActiveMonitorId()`
   - `useTaskbar()`
   - `useVisibleWindows()`
 
@@ -209,7 +261,8 @@ Selectors and React hooks expose slightly different usage styles over the same c
 These examples intentionally stay within currently implemented features:
 
 - multiple isolated desktops
-- rectangular desktop bounds
-- desktop-edge snapping only when `desktop.snap.threshold` is configured
+- multiple monitors per desktop
+- owner-scoped modal windows
+- monitor-edge snapping only when `monitor.snap.threshold` is configured
 - keyboard navigation currently covers focus traversal only
-- no multi-monitor support yet
+- there is no backdrop-dismiss behavior in the core

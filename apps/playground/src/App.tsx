@@ -1,4 +1,6 @@
 import {
+  useActiveMonitorId,
+  useTopModalWindow,
   WindowManagerProvider,
   useActiveDesktopId,
   useDesktops,
@@ -13,9 +15,15 @@ import type { WindowManager } from '@window-manager/core';
 export function PlaygroundApp(): React.JSX.Element {
   const manager = useWindowManager();
   const activeDesktopId = useActiveDesktopId();
+  const activeMonitorId = useActiveMonitorId();
   const desktops = useDesktops();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
+  const topModalWindow = useTopModalWindow();
+  const activeDesktop = desktops.find((desktop) => desktop.id === activeDesktopId) ?? desktops[0] ?? null;
+  const activeWindow = manager.selectors.getActiveWindow(manager.getState());
+  const monitors = activeDesktop ? Object.entries(activeDesktop.monitors) : [];
+  const topModalIndex = topModalWindow ? windows.findIndex((windowEntity) => windowEntity.id === topModalWindow.id) : -1;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -58,6 +66,30 @@ export function PlaygroundApp(): React.JSX.Element {
         >
           New window
         </button>
+        <button
+          aria-label="Create a modal window"
+          disabled={!activeWindow}
+          onClick={() => {
+            if (!activeWindow) {
+              return;
+            }
+
+            const id = crypto.randomUUID().slice(0, 8);
+            manager.createWindow({
+              id,
+              ownerWindowId: activeWindow.id,
+              title: `Modal ${id}`,
+              rect: {
+                x: activeWindow.rect.x + 40,
+                y: activeWindow.rect.y + 40,
+                width: Math.min(activeWindow.rect.width, 360),
+                height: Math.min(activeWindow.rect.height, 220),
+              },
+            });
+          }}
+        >
+          New modal
+        </button>
         <button aria-label="Focus the previous window" onClick={() => manager.focusPreviousWindow()}>
           Previous window
         </button>
@@ -79,11 +111,53 @@ export function PlaygroundApp(): React.JSX.Element {
           </button>
         ))}
       </div>
+      <div className="toolbar" role="tablist" aria-label="Monitors">
+        <button
+          aria-label="Create a new monitor"
+          onClick={() => {
+            const id = `monitor-${crypto.randomUUID().slice(0, 4)}`;
+            manager.createMonitor(
+              id,
+              {
+                size: { width: 1280, height: 720 },
+                bounds: { minX: 1320, minY: 0, maxX: 2600, maxY: 720 },
+              },
+              activeDesktopId,
+            );
+            manager.switchMonitor(id, activeDesktopId);
+          }}
+        >
+          New monitor
+        </button>
+        {monitors.map(([monitorId]) => (
+          <button
+            key={monitorId}
+            role="tab"
+            aria-selected={monitorId === activeMonitorId}
+            aria-label={`Switch to monitor ${monitorId}`}
+            onClick={() => manager.switchMonitor(monitorId, activeDesktopId)}
+          >
+            {monitorId}
+          </button>
+        ))}
+      </div>
       <p id="desktop-help" className="sr-only">
         Use Alt+Shift+Left or Alt+Shift+Right to move keyboard focus between visible windows.
       </p>
+      {topModalWindow && (
+        <div
+          className="modal-backdrop"
+          aria-hidden="true"
+          style={{ zIndex: Math.max(99, 99 + topModalIndex) }}
+        />
+      )}
       {windows.map((windowEntity, index) => (
-        <WindowView key={windowEntity.id} id={windowEntity.id} zIndex={100 + index} />
+        <WindowView
+          key={windowEntity.id}
+          id={windowEntity.id}
+          zIndex={100 + index}
+          isModal={!!windowEntity.ownerWindowId}
+        />
       ))}
       <div className="taskbar" role="toolbar" aria-label="Taskbar">
         {taskbar.map((item) => (
@@ -114,7 +188,7 @@ export function PlaygroundApp(): React.JSX.Element {
   );
 }
 
-function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
+function WindowView({ id, zIndex, isModal }: { id: string; zIndex: number; isModal: boolean }) {
   const manager = useWindowManager();
   const windows = useVisibleWindows();
   const windowEntity = windows.find((item) => item.id === id) ?? null;
@@ -173,11 +247,15 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
     resizeRef.current = null;
   };
 
+  const stopWindowChromePointer = (event: ReactPointerEvent<HTMLElement>): void => {
+    event.stopPropagation();
+  };
+
   return (
     <div
       className="window"
       role="dialog"
-      aria-modal="false"
+      aria-modal={isModal ? 'true' : 'false'}
       aria-labelledby={titleId}
       tabIndex={0}
       style={{
@@ -191,25 +269,34 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
     >
       <div className="titlebar" onPointerDown={startDrag} onPointerMove={onDrag} onPointerUp={stopDrag}>
         <span id={titleId}>{windowEntity.title ?? windowEntity.id}</span>
-        <div className="actions">
+        <div className="actions" onPointerDown={stopWindowChromePointer} onPointerUp={stopWindowChromePointer}>
           <button
             aria-label={`Minimize ${windowEntity.title ?? windowEntity.id}`}
             disabled={!windowEntity.flags.minimizable}
-            onClick={() => manager.minimizeWindow(windowEntity.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              manager.minimizeWindow(windowEntity.id);
+            }}
           >
             -
           </button>
           <button
             aria-label={`Maximize ${windowEntity.title ?? windowEntity.id}`}
             disabled={!windowEntity.flags.maximizable}
-            onClick={() => manager.maximizeWindow(windowEntity.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              manager.maximizeWindow(windowEntity.id);
+            }}
           >
             +
           </button>
           <button
             aria-label={`Close ${windowEntity.title ?? windowEntity.id}`}
             disabled={!windowEntity.flags.closable}
-            onClick={() => manager.closeWindow(windowEntity.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              manager.closeWindow(windowEntity.id);
+            }}
           >
             x
           </button>

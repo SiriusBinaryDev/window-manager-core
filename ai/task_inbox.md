@@ -12,3 +12,4 @@
 - Decide whether future examples belong in a new `apps/examples` workspace or inside `apps/playground`.
 - If publishing is enabled, decide whether release management uses `changesets` or a different workflow.
 - Consider consolidating shared workspace source aliases so Vite and Vitest configs do not drift across packages.
+- Consider whether the core should expose an explicit command for moving an existing window between monitors, not just creating it on a target monitor.

@@ -6,6 +6,8 @@ import type {
   CreateWindowPayload,
   DesktopId,
   DesktopState,
+  MonitorId,
+  MonitorState,
   ResizeEdge,
   WindowId,
   WindowManagerCommand,
@@ -21,6 +23,8 @@ export interface WindowManager {
   createWindow: (payload: CreateWindowPayload) => WindowManagerState;
   createDesktop: (id: DesktopId, desktop?: DesktopState) => WindowManagerState;
   switchDesktop: (id: DesktopId) => WindowManagerState;
+  createMonitor: (id: MonitorId, monitor?: MonitorState, desktopId?: DesktopId) => WindowManagerState;
+  switchMonitor: (id: MonitorId, desktopId?: DesktopId) => WindowManagerState;
   focusWindow: (id: WindowId) => WindowManagerState;
   focusNextWindow: () => WindowManagerState;
   focusPreviousWindow: () => WindowManagerState;
@@ -30,7 +34,8 @@ export interface WindowManager {
   minimizeWindow: (id: WindowId) => WindowManagerState;
   restoreWindow: (id: WindowId) => WindowManagerState;
   closeWindow: (id: WindowId) => WindowManagerState;
-  setDesktop: (payload: DesktopState, desktopId?: DesktopId) => WindowManagerState;
+  setMonitor: (payload: MonitorState, desktopId?: DesktopId, monitorId?: MonitorId) => WindowManagerState;
+  setDesktop: (payload: DesktopState, desktopId?: DesktopId, monitorId?: MonitorId) => WindowManagerState;
   serialize: () => string;
   hydrate: (serialized: string) => WindowManagerState | null;
   selectors: typeof selectors;
@@ -64,6 +69,8 @@ export function createWindowManager(initialState: WindowManagerState = createIni
     createWindow: (payload) => dispatch(commands.createWindow(payload)),
     createDesktop: (id, desktop) => dispatch(commands.createDesktop(id, desktop)),
     switchDesktop: (id) => dispatch(commands.switchDesktop(id)),
+    createMonitor: (id, monitor, desktopId) => dispatch(commands.createMonitor(id, monitor, desktopId)),
+    switchMonitor: (id, desktopId) => dispatch(commands.switchMonitor(id, desktopId)),
     focusWindow: (id) => dispatch(commands.focusWindow(id)),
     focusNextWindow: () => dispatch(commands.focusNextWindow()),
     focusPreviousWindow: () => dispatch(commands.focusPreviousWindow()),
@@ -74,7 +81,8 @@ export function createWindowManager(initialState: WindowManagerState = createIni
     minimizeWindow: (id) => dispatch(commands.minimizeWindow(id)),
     restoreWindow: (id) => dispatch(commands.restoreWindow(id)),
     closeWindow: (id) => dispatch(commands.closeWindow(id)),
-    setDesktop: (payload, desktopId) => dispatch(commands.setDesktop(payload, desktopId)),
+    setMonitor: (payload, desktopId, monitorId) => dispatch(commands.setMonitor(payload, desktopId, monitorId)),
+    setDesktop: (payload, desktopId, monitorId) => dispatch(commands.setDesktop(payload, desktopId, monitorId)),
     serialize: () => serializeState(state),
     hydrate: (serialized) => {
       const hydrated = hydrateState(serialized);

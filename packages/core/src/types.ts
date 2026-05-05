@@ -1,8 +1,10 @@
-export const WINDOW_MANAGER_STATE_VERSION = 2;
+export const WINDOW_MANAGER_STATE_VERSION = 4;
 export const DEFAULT_DESKTOP_ID = 'default';
+export const DEFAULT_MONITOR_ID = 'default';
 
 export type WindowId = string;
 export type DesktopId = string;
+export type MonitorId = string;
 
 export interface Rect {
   x: number;
@@ -18,7 +20,7 @@ export interface Bounds {
   maxY: number;
 }
 
-export interface DesktopState {
+export interface MonitorState {
   size: {
     width: number;
     height: number;
@@ -26,6 +28,8 @@ export interface DesktopState {
   bounds: Bounds;
   snap?: DesktopSnapSettings;
 }
+
+export type DesktopState = MonitorState;
 
 export interface DesktopSnapSettings {
   threshold: number;
@@ -48,6 +52,8 @@ export interface WindowStateFlags {
 export interface WindowEntity {
   id: WindowId;
   desktopId: DesktopId;
+  monitorId: MonitorId;
+  ownerWindowId?: WindowId;
   title?: string;
   state: WindowStateFlags;
   rect: Rect;
@@ -57,7 +63,8 @@ export interface WindowEntity {
 
 export interface DesktopWorkspace {
   id: DesktopId;
-  desktop: DesktopState;
+  monitors: Record<MonitorId, MonitorState>;
+  activeMonitorId: MonitorId;
   orderedWindowIds: WindowId[];
   activeWindowId: WindowId | null;
 }
@@ -72,6 +79,8 @@ export interface WindowManagerState {
 export interface CreateWindowPayload {
   id: WindowId;
   desktopId?: DesktopId;
+  monitorId?: MonitorId;
+  ownerWindowId?: WindowId;
   title?: string;
   rect?: Partial<Rect>;
   flags?: Partial<WindowFlags>;
@@ -92,6 +101,8 @@ export type WindowManagerCommand =
   | { type: 'CREATE_WINDOW'; payload: CreateWindowPayload }
   | { type: 'CREATE_DESKTOP'; payload: { id: DesktopId; desktop?: DesktopState } }
   | { type: 'SWITCH_DESKTOP'; payload: { id: DesktopId } }
+  | { type: 'CREATE_MONITOR'; payload: { id: MonitorId; monitor?: MonitorState; desktopId?: DesktopId } }
+  | { type: 'SWITCH_MONITOR'; payload: { id: MonitorId; desktopId?: DesktopId } }
   | { type: 'FOCUS_WINDOW'; payload: { id: WindowId } }
   | { type: 'FOCUS_NEXT_WINDOW' }
   | { type: 'FOCUS_PREVIOUS_WINDOW' }
@@ -104,7 +115,8 @@ export type WindowManagerCommand =
   | { type: 'MINIMIZE_WINDOW'; payload: { id: WindowId } }
   | { type: 'RESTORE_WINDOW'; payload: { id: WindowId } }
   | { type: 'CLOSE_WINDOW'; payload: { id: WindowId } }
-  | { type: 'SET_DESKTOP'; payload: { desktop: DesktopState; desktopId?: DesktopId } }
+  | { type: 'SET_MONITOR'; payload: { monitor: MonitorState; desktopId?: DesktopId; monitorId?: MonitorId } }
+  | { type: 'SET_DESKTOP'; payload: { desktop: DesktopState; desktopId?: DesktopId; monitorId?: MonitorId } }
   | { type: 'HYDRATE_STATE'; payload: WindowManagerState };
 
 export interface SerializationEnvelope {

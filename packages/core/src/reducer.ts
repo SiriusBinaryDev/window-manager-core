@@ -2,15 +2,16 @@ import { clampRectToBounds, moveRect, resizeRect, snapRectToBounds, snapResizedR
 import { sanitizeWindowManagerState } from './serialization';
 import type {
   DesktopId,
-  DesktopState,
   DesktopWorkspace,
+  MonitorId,
+  MonitorState,
   Rect,
   WindowEntity,
   WindowId,
   WindowManagerCommand,
   WindowManagerState,
 } from './types';
-import { DEFAULT_DESKTOP_ID, WINDOW_MANAGER_STATE_VERSION } from './types';
+import { DEFAULT_DESKTOP_ID, DEFAULT_MONITOR_ID, WINDOW_MANAGER_STATE_VERSION } from './types';
 
 const DEFAULT_RECT: Rect = {
   x: 40,
@@ -19,7 +20,7 @@ const DEFAULT_RECT: Rect = {
   height: 320,
 };
 
-const DEFAULT_DESKTOP: DesktopState = {
+const DEFAULT_MONITOR: MonitorState = {
   size: { width: 1280, height: 720 },
   bounds: { minX: 0, minY: 0, maxX: 1280, maxY: 720 },
 };
@@ -32,10 +33,16 @@ const DEFAULT_FLAGS = {
   maximizable: true,
 };
 
-function createDesktopWorkspace(id: DesktopId, desktop: DesktopState = DEFAULT_DESKTOP): DesktopWorkspace {
+function createDesktopWorkspace(
+  id: DesktopId,
+  monitor: MonitorState = DEFAULT_MONITOR,
+): DesktopWorkspace {
   return {
     id,
-    desktop,
+    monitors: {
+      [DEFAULT_MONITOR_ID]: monitor,
+    },
+    activeMonitorId: DEFAULT_MONITOR_ID,
     orderedWindowIds: [],
     activeWindowId: null,
   };
@@ -45,21 +52,96 @@ function getDesktopWorkspace(state: WindowManagerState, desktopId: DesktopId): D
   return state.desktops[desktopId] ?? null;
 }
 
-function getDesktopRect(desktop: DesktopState): Rect {
+function getMonitorState(workspace: DesktopWorkspace, monitorId: MonitorId): MonitorState | null {
+  return workspace.monitors[monitorId] ?? null;
+}
+
+function getFallbackMonitorId(workspace: DesktopWorkspace): MonitorId {
+  return workspace.monitors[workspace.activeMonitorId]
+    ? workspace.activeMonitorId
+    : (Object.keys(workspace.monitors)[0] ?? DEFAULT_MONITOR_ID);
+}
+
+function resolveMonitorId(workspace: DesktopWorkspace, monitorId?: MonitorId): MonitorId | null {
+  const targetId = monitorId ?? workspace.activeMonitorId;
+  if (workspace.monitors[targetId]) {
+    return targetId;
+  }
+
+  return null;
+}
+
+function getMonitorRect(monitor: MonitorState): Rect {
   return {
-    x: desktop.bounds.minX,
-    y: desktop.bounds.minY,
-    width: desktop.bounds.maxX - desktop.bounds.minX,
-    height: desktop.bounds.maxY - desktop.bounds.minY,
+    x: monitor.bounds.minX,
+    y: monitor.bounds.minY,
+    width: monitor.bounds.maxX - monitor.bounds.minX,
+    height: monitor.bounds.maxY - monitor.bounds.minY,
   };
 }
 
-function getSnapThreshold(desktop: DesktopState): number {
-  return desktop.snap?.threshold ?? 0;
+function getSnapThreshold(monitor: MonitorState): number {
+  return monitor.snap?.threshold ?? 0;
 }
 
-function isWindowFocusable(windowEntity: WindowEntity | undefined): windowEntity is WindowEntity {
+function isWindowVisible(windowEntity: WindowEntity | undefined): windowEntity is WindowEntity {
   return !!windowEntity && !windowEntity.state.closed && !windowEntity.state.minimized;
+}
+
+function getOpenModalWindow(state: WindowManagerState, desktopId: DesktopId): WindowEntity | null {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return null;
+  }
+
+  for (let index = workspace.orderedWindowIds.length - 1; index >= 0; index -= 1) {
+    const id = workspace.orderedWindowIds[index];
+    const windowEntity = state.windows[id];
+    if (
+      isWindowVisible(windowEntity) &&
+      windowEntity.desktopId === desktopId &&
+      !!windowEntity.ownerWindowId
+    ) {
+      return windowEntity;
+    }
+  }
+
+  return null;
+}
+
+function resolveFocusableWindow(
+  state: WindowManagerState,
+  windowEntity: WindowEntity | undefined,
+): WindowEntity | null {
+  if (!isWindowVisible(windowEntity)) {
+    return null;
+  }
+
+  const openModalWindow = getOpenModalWindow(state, windowEntity.desktopId);
+  if (!openModalWindow) {
+    return windowEntity;
+  }
+
+  return openModalWindow.id === windowEntity.id ? windowEntity : openModalWindow;
+}
+
+function getModalDescendantIds(state: WindowManagerState, ownerWindowId: WindowId): WindowId[] {
+  const descendants: WindowId[] = [];
+  const stack = [ownerWindowId];
+
+  while (stack.length > 0) {
+    const currentOwnerId = stack.pop()!;
+    for (const windowEntity of Object.values(state.windows)) {
+      if (windowEntity.ownerWindowId !== currentOwnerId) {
+        continue;
+      }
+
+      descendants.push(windowEntity.id);
+      stack.push(windowEntity.id);
+    }
+  }
+
+  return descendants;
 }
 
 function findNextActiveId(state: WindowManagerState, desktopId: DesktopId): WindowId | null {
@@ -71,8 +153,9 @@ function findNextActiveId(state: WindowManagerState, desktopId: DesktopId): Wind
   for (let index = workspace.orderedWindowIds.length - 1; index >= 0; index -= 1) {
     const id = workspace.orderedWindowIds[index];
     const windowEntity = state.windows[id];
-    if (isWindowFocusable(windowEntity) && windowEntity.desktopId === desktopId) {
-      return id;
+    if (isWindowVisible(windowEntity) && windowEntity.desktopId === desktopId) {
+      const focusTarget = resolveFocusableWindow(state, windowEntity);
+      return focusTarget?.id ?? null;
     }
   }
 
@@ -88,7 +171,7 @@ function rectEquals(left: Rect, right: Rect): boolean {
   );
 }
 
-function desktopEquals(left: DesktopState, right: DesktopState): boolean {
+function monitorEquals(left: MonitorState, right: MonitorState): boolean {
   return (
     left.size.width === right.size.width &&
     left.size.height === right.size.height &&
@@ -109,7 +192,11 @@ function bringToFront(orderedWindowIds: WindowId[], id: WindowId): WindowId[] {
   return [...rest, id];
 }
 
-function getVisibleWindowIds(state: WindowManagerState, desktopId: DesktopId): WindowId[] {
+function getVisibleWindowIds(
+  state: WindowManagerState,
+  desktopId: DesktopId,
+  monitorId?: MonitorId,
+): WindowId[] {
   const workspace = getDesktopWorkspace(state, desktopId);
   if (!workspace) {
     return [];
@@ -117,8 +204,37 @@ function getVisibleWindowIds(state: WindowManagerState, desktopId: DesktopId): W
 
   return workspace.orderedWindowIds.filter((id) => {
     const windowEntity = state.windows[id];
-    return isWindowFocusable(windowEntity) && windowEntity.desktopId === desktopId;
+    return (
+      isWindowVisible(windowEntity) &&
+      resolveFocusableWindow(state, windowEntity)?.id === windowEntity.id &&
+      windowEntity.desktopId === desktopId &&
+      (monitorId === undefined || windowEntity.monitorId === monitorId)
+    );
   });
+}
+
+function getResolvedActiveMonitorId(
+  state: WindowManagerState,
+  desktopId: DesktopId,
+  activeWindowId: WindowId | null,
+): MonitorId | null {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return null;
+  }
+
+  if (activeWindowId) {
+    const activeWindow = state.windows[activeWindowId];
+    if (
+      activeWindow &&
+      activeWindow.desktopId === desktopId &&
+      workspace.monitors[activeWindow.monitorId]
+    ) {
+      return activeWindow.monitorId;
+    }
+  }
+
+  return getFallbackMonitorId(workspace);
 }
 
 function patchWorkspace(
@@ -190,6 +306,8 @@ function rotateVisibleWindowOrder(
       : [visibleWindowIds[visibleWindowIds.length - 1], ...visibleWindowIds.slice(0, -1)];
   const visibleIdSet = new Set(visibleWindowIds);
   let visibleIndex = 0;
+  const activeWindowId = rotatedVisibleIds[rotatedVisibleIds.length - 1] ?? null;
+  const activeMonitorId = getResolvedActiveMonitorId(state, desktopId, activeWindowId);
 
   return patchWorkspace(state, desktopId, (current) => ({
     ...current,
@@ -202,29 +320,34 @@ function rotateVisibleWindowOrder(
       visibleIndex += 1;
       return nextId;
     }),
-    activeWindowId: rotatedVisibleIds[rotatedVisibleIds.length - 1] ?? null,
+    activeWindowId,
+    activeMonitorId: activeMonitorId ?? current.activeMonitorId,
   }));
 }
 
 function updateWindowWorkspaceFocus(
   state: WindowManagerState,
   desktopId: DesktopId,
+  monitorId: MonitorId,
   windowId: WindowId,
   switchDesktop: boolean,
 ): WindowManagerState {
   const workspace = getDesktopWorkspace(state, desktopId);
-  if (!workspace) {
+  if (!workspace || !workspace.monitors[monitorId]) {
     return state;
   }
 
   const orderedWindowIds = bringToFront(workspace.orderedWindowIds, windowId);
   const nextState =
-    orderedWindowIds === workspace.orderedWindowIds && workspace.activeWindowId === windowId
+    orderedWindowIds === workspace.orderedWindowIds &&
+    workspace.activeWindowId === windowId &&
+    workspace.activeMonitorId === monitorId
       ? state
       : patchWorkspace(state, desktopId, (current) => ({
           ...current,
           orderedWindowIds,
           activeWindowId: windowId,
+          activeMonitorId: monitorId,
         }));
 
   if (!switchDesktop || nextState.activeDesktopId === desktopId) {
@@ -235,6 +358,31 @@ function updateWindowWorkspaceFocus(
     ...nextState,
     activeDesktopId: desktopId,
   };
+}
+
+function updateWorkspaceActiveWindow(
+  state: WindowManagerState,
+  desktopId: DesktopId,
+  activeWindowId: WindowId | null,
+): WindowManagerState {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return state;
+  }
+
+  const activeMonitorId = getResolvedActiveMonitorId(state, desktopId, activeWindowId);
+  if (
+    workspace.activeWindowId === activeWindowId &&
+    (!activeMonitorId || workspace.activeMonitorId === activeMonitorId)
+  ) {
+    return state;
+  }
+
+  return patchWorkspace(state, desktopId, (current) => ({
+    ...current,
+    activeWindowId,
+    activeMonitorId: activeMonitorId ?? current.activeMonitorId,
+  }));
 }
 
 export function createInitialState(): WindowManagerState {
@@ -258,9 +406,27 @@ export function windowManagerReducer(
         return state;
       }
 
-      const desktopId = command.payload.desktopId ?? state.activeDesktopId;
+      const ownerWindow =
+        command.payload.ownerWindowId !== undefined
+          ? state.windows[command.payload.ownerWindowId] ?? null
+          : null;
+      if (command.payload.ownerWindowId !== undefined && (!ownerWindow || ownerWindow.state.closed)) {
+        return state;
+      }
+
+      const desktopId = ownerWindow?.desktopId ?? command.payload.desktopId ?? state.activeDesktopId;
       const workspace = getDesktopWorkspace(state, desktopId);
       if (!workspace) {
+        return state;
+      }
+
+      const monitorId = ownerWindow?.monitorId ?? resolveMonitorId(workspace, command.payload.monitorId);
+      if (!monitorId) {
+        return state;
+      }
+
+      const monitor = getMonitorState(workspace, monitorId);
+      if (!monitor) {
         return state;
       }
 
@@ -268,10 +434,12 @@ export function windowManagerReducer(
         ...DEFAULT_RECT,
         ...command.payload.rect,
       };
-      const safeRect = clampRectToBounds(baseRect, workspace.desktop.bounds);
+      const safeRect = clampRectToBounds(baseRect, monitor.bounds);
       const windowEntity: WindowEntity = {
         id: command.payload.id,
         desktopId,
+        monitorId,
+        ...(ownerWindow ? { ownerWindowId: ownerWindow.id } : {}),
         state: {
           minimized: false,
           maximized: false,
@@ -286,20 +454,24 @@ export function windowManagerReducer(
         ...(command.payload.title !== undefined ? { title: command.payload.title } : {}),
       };
 
+      const shouldFocus = ownerWindow ? true : (command.payload.focus ?? true);
+      const nextWorkspace: DesktopWorkspace = {
+        ...workspace,
+        orderedWindowIds: [...workspace.orderedWindowIds, windowEntity.id],
+        activeWindowId: shouldFocus ? windowEntity.id : workspace.activeWindowId,
+        activeMonitorId: shouldFocus ? monitorId : workspace.activeMonitorId,
+      };
+
       const nextState: WindowManagerState = {
         ...state,
         windows: { ...state.windows, [windowEntity.id]: windowEntity },
         desktops: {
           ...state.desktops,
-          [desktopId]: {
-            ...workspace,
-            orderedWindowIds: [...workspace.orderedWindowIds, windowEntity.id],
-            activeWindowId: (command.payload.focus ?? true) ? windowEntity.id : workspace.activeWindowId,
-          },
+          [desktopId]: nextWorkspace,
         },
       };
 
-      if (!(command.payload.focus ?? true) || state.activeDesktopId === desktopId) {
+      if (!shouldFocus || state.activeDesktopId === desktopId) {
         return nextState;
       }
 
@@ -334,13 +506,48 @@ export function windowManagerReducer(
       };
     }
 
-    case 'FOCUS_WINDOW': {
-      const windowEntity = state.windows[command.payload.id];
-      if (!isWindowFocusable(windowEntity)) {
+    case 'CREATE_MONITOR': {
+      const desktopId = command.payload.desktopId ?? state.activeDesktopId;
+      const workspace = getDesktopWorkspace(state, desktopId);
+      if (!workspace || workspace.monitors[command.payload.id]) {
         return state;
       }
 
-      return updateWindowWorkspaceFocus(state, windowEntity.desktopId, command.payload.id, true);
+      return patchWorkspace(state, desktopId, (current) => ({
+        ...current,
+        monitors: {
+          ...current.monitors,
+          [command.payload.id]: command.payload.monitor ?? DEFAULT_MONITOR,
+        },
+      }));
+    }
+
+    case 'SWITCH_MONITOR': {
+      const desktopId = command.payload.desktopId ?? state.activeDesktopId;
+      const workspace = getDesktopWorkspace(state, desktopId);
+      if (!workspace || !workspace.monitors[command.payload.id] || workspace.activeMonitorId === command.payload.id) {
+        return state;
+      }
+
+      return patchWorkspace(state, desktopId, (current) => ({
+        ...current,
+        activeMonitorId: command.payload.id,
+      }));
+    }
+
+    case 'FOCUS_WINDOW': {
+      const windowEntity = resolveFocusableWindow(state, state.windows[command.payload.id]);
+      if (!windowEntity) {
+        return state;
+      }
+
+      return updateWindowWorkspaceFocus(
+        state,
+        windowEntity.desktopId,
+        windowEntity.monitorId,
+        windowEntity.id,
+        true,
+      );
     }
 
     case 'FOCUS_NEXT_WINDOW':
@@ -364,7 +571,8 @@ export function windowManagerReducer(
       }
 
       const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
-      if (!workspace) {
+      const monitor = workspace ? getMonitorState(workspace, windowEntity.monitorId) : null;
+      if (!workspace || !monitor) {
         return state;
       }
 
@@ -374,8 +582,8 @@ export function windowManagerReducer(
         }
 
         const moved = moveRect(current.rect, command.payload.deltaX, command.payload.deltaY);
-        const snapped = snapRectToBounds(moved, workspace.desktop.bounds, getSnapThreshold(workspace.desktop));
-        const clamped = clampRectToBounds(snapped, workspace.desktop.bounds);
+        const snapped = snapRectToBounds(moved, monitor.bounds, getSnapThreshold(monitor));
+        const clamped = clampRectToBounds(snapped, monitor.bounds);
         if (rectEquals(clamped, current.rect)) {
           return current;
         }
@@ -395,7 +603,8 @@ export function windowManagerReducer(
       }
 
       const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
-      if (!workspace) {
+      const monitor = workspace ? getMonitorState(workspace, windowEntity.monitorId) : null;
+      if (!workspace || !monitor) {
         return state;
       }
 
@@ -412,11 +621,11 @@ export function windowManagerReducer(
         );
         const snapped = snapResizedRectToBounds(
           resized,
-          workspace.desktop.bounds,
+          monitor.bounds,
           command.payload.edge,
-          getSnapThreshold(workspace.desktop),
+          getSnapThreshold(monitor),
         );
-        const clamped = clampRectToBounds(snapped, workspace.desktop.bounds);
+        const clamped = clampRectToBounds(snapped, monitor.bounds);
         if (rectEquals(clamped, current.rect)) {
           return current;
         }
@@ -441,7 +650,8 @@ export function windowManagerReducer(
       }
 
       const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
-      if (!workspace) {
+      const monitor = workspace ? getMonitorState(workspace, windowEntity.monitorId) : null;
+      if (!workspace || !monitor) {
         return state;
       }
 
@@ -449,13 +659,14 @@ export function windowManagerReducer(
         ...current,
         state: { ...current.state, minimized: false, maximized: true },
         restoreRect: current.rect,
-        rect: getDesktopRect(workspace.desktop),
+        rect: getMonitorRect(monitor),
       }));
 
       return patchWorkspace(nextState, windowEntity.desktopId, (current) => ({
         ...current,
         orderedWindowIds: bringToFront(current.orderedWindowIds, command.payload.id),
         activeWindowId: command.payload.id,
+        activeMonitorId: windowEntity.monitorId,
       }));
     }
 
@@ -484,13 +695,12 @@ export function windowManagerReducer(
         return state;
       }
 
-      return patchWorkspace(minimized, windowEntity.desktopId, (current) => ({
-        ...current,
-        activeWindowId:
-          current.activeWindowId === command.payload.id
-            ? findNextActiveId(minimized, windowEntity.desktopId)
-            : current.activeWindowId,
-      }));
+      const nextActiveWindowId =
+        getDesktopWorkspace(minimized, windowEntity.desktopId)?.activeWindowId === command.payload.id
+          ? findNextActiveId(minimized, windowEntity.desktopId)
+          : getDesktopWorkspace(minimized, windowEntity.desktopId)?.activeWindowId ?? null;
+
+      return updateWorkspaceActiveWindow(minimized, windowEntity.desktopId, nextActiveWindowId);
     }
 
     case 'RESTORE_WINDOW': {
@@ -500,12 +710,13 @@ export function windowManagerReducer(
       }
 
       const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
-      if (!workspace) {
+      const monitor = workspace ? getMonitorState(workspace, windowEntity.monitorId) : null;
+      if (!workspace || !monitor) {
         return state;
       }
 
       const restoredState = patchWindow(state, command.payload.id, (current) => {
-        const nextRect = clampRectToBounds(current.restoreRect, workspace.desktop.bounds);
+        const nextRect = clampRectToBounds(current.restoreRect, monitor.bounds);
         const hasStateChange = current.state.minimized || current.state.maximized;
         const hasRectChange = !rectEquals(nextRect, current.rect);
 
@@ -520,7 +731,18 @@ export function windowManagerReducer(
         };
       });
 
-      return updateWindowWorkspaceFocus(restoredState, windowEntity.desktopId, command.payload.id, true);
+      const focusTarget = resolveFocusableWindow(restoredState, restoredState.windows[command.payload.id]);
+      if (!focusTarget) {
+        return restoredState;
+      }
+
+      return updateWindowWorkspaceFocus(
+        restoredState,
+        focusTarget.desktopId,
+        focusTarget.monitorId,
+        focusTarget.id,
+        true,
+      );
     }
 
     case 'CLOSE_WINDOW': {
@@ -529,25 +751,44 @@ export function windowManagerReducer(
         return state;
       }
 
-      const closedState = patchWindow(state, command.payload.id, (current) => ({
-        ...current,
-        state: {
-          ...current.state,
-          closed: true,
-          minimized: false,
-          maximized: false,
-        },
-      }));
+      const windowIdsToClose = [command.payload.id, ...getModalDescendantIds(state, command.payload.id)];
+      let nextWindows: WindowManagerState['windows'] | null = null;
 
-      return patchWorkspace(closedState, windowEntity.desktopId, (current) => ({
-        ...current,
-        activeWindowId:
-          current.activeWindowId === command.payload.id
-            ? findNextActiveId(closedState, windowEntity.desktopId)
-            : current.activeWindowId,
-      }));
+      for (const windowId of windowIdsToClose) {
+        const current = state.windows[windowId];
+        if (!current || current.state.closed) {
+          continue;
+        }
+
+        nextWindows ??= { ...state.windows };
+        nextWindows[windowId] = {
+          ...current,
+          state: {
+            ...current.state,
+            closed: true,
+            minimized: false,
+            maximized: false,
+          },
+        };
+      }
+
+      const closedState =
+        nextWindows === null
+          ? state
+          : {
+              ...state,
+              windows: nextWindows,
+            };
+
+      const activeWindowId = getDesktopWorkspace(closedState, windowEntity.desktopId)?.activeWindowId ?? null;
+      const nextActiveWindowId = activeWindowId && windowIdsToClose.includes(activeWindowId)
+        ? findNextActiveId(closedState, windowEntity.desktopId)
+        : activeWindowId;
+
+      return updateWorkspaceActiveWindow(closedState, windowEntity.desktopId, nextActiveWindowId);
     }
 
+    case 'SET_MONITOR':
     case 'SET_DESKTOP': {
       const desktopId = command.payload.desktopId ?? state.activeDesktopId;
       const workspace = getDesktopWorkspace(state, desktopId);
@@ -555,18 +796,28 @@ export function windowManagerReducer(
         return state;
       }
 
-      const nextDesktop = command.payload.desktop;
+      const monitorId = resolveMonitorId(workspace, command.payload.monitorId);
+      if (!monitorId) {
+        return state;
+      }
+
+      const nextMonitor = command.type === 'SET_MONITOR' ? command.payload.monitor : command.payload.desktop;
+      const currentMonitor = workspace.monitors[monitorId];
+      if (!currentMonitor) {
+        return state;
+      }
+
       let nextWindows: WindowManagerState['windows'] | null = null;
 
       for (const windowId of workspace.orderedWindowIds) {
         const current = state.windows[windowId];
-        if (!current || current.state.closed) {
+        if (!current || current.state.closed || current.monitorId !== monitorId) {
           continue;
         }
 
         const nextRect = current.state.maximized
-          ? getDesktopRect(nextDesktop)
-          : clampRectToBounds(current.rect, nextDesktop.bounds);
+          ? getMonitorRect(nextMonitor)
+          : clampRectToBounds(current.rect, nextMonitor.bounds);
 
         if (rectEquals(nextRect, current.rect)) {
           continue;
@@ -579,7 +830,7 @@ export function windowManagerReducer(
         };
       }
 
-      if (!nextWindows && desktopEquals(workspace.desktop, nextDesktop)) {
+      if (!nextWindows && monitorEquals(currentMonitor, nextMonitor)) {
         return state;
       }
 
@@ -590,7 +841,10 @@ export function windowManagerReducer(
           ...state.desktops,
           [desktopId]: {
             ...workspace,
-            desktop: nextDesktop,
+            monitors: {
+              ...workspace.monitors,
+              [monitorId]: nextMonitor,
+            },
           },
         },
       };

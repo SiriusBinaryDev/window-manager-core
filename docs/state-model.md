@@ -3,7 +3,8 @@
 ```ts
 interface DesktopWorkspace {
   id: DesktopId;
-  desktop: DesktopState;
+  monitors: Record<MonitorId, MonitorState>;
+  activeMonitorId: MonitorId;
   orderedWindowIds: WindowId[];
   activeWindowId: WindowId | null;
 }
@@ -20,6 +21,8 @@ interface WindowManagerState {
 
 - `id`
 - `desktopId`
+- `monitorId`
+- `ownerWindowId?`
 - `title?`
 - `state`: `minimized`, `maximized`, `closed`
 - `rect`
@@ -28,19 +31,28 @@ interface WindowManagerState {
 
 ## Reglas clave
 
-- focus sube z-order.
-- cada desktop mantiene su propio `orderedWindowIds` y `activeWindowId`.
-- solo hay una ventana activa por desktop.
-- una ventana focusable es una ventana no cerrada y no minimizada.
-- `focusWindow(id)` ignora ventanas no focusable.
-- `focusWindow(id)` cambia al desktop de la ventana si vive en otro workspace.
-- `focusNextWindow()` y `focusPreviousWindow()` ciclan solo entre ventanas focusable.
-- minimizar o cerrar la ventana activa promueve la ventana focusable mas alta en `orderedWindowIds`.
-- `restoreWindow(id)` trae la ventana al frente, la convierte en activa y cambia al desktop objetivo si hace falta.
-- maximize ocupa desktop completo cuando `flags.maximizable` es `true`.
-- minimize oculta en desktop y queda en taskbar cuando `flags.minimizable` es `true`.
-- restore recupera `restoreRect`.
-- close activa la siguiente ventana visible cuando `flags.closable` es `true`.
-- `createWindow({ desktopId? })` usa el desktop activo por defecto.
-- `setDesktop(payload, desktopId?)` actualiza el desktop activo por defecto o uno explicito si se pasa id.
-- la hidratacion migra automaticamente el estado legado de un solo desktop al workspace `default`.
+- cada desktop mantiene su propio conjunto de monitores, `orderedWindowIds` y `activeWindowId`
+- `activeMonitorId` vive dentro de cada desktop workspace
+- cada ventana pertenece a exactamente un desktop y un monitor
+- una ventana modal declara `ownerWindowId` y hereda desktop y monitor de su owner
+- solo hay una ventana activa por desktop
+- una ventana focusable es una ventana no cerrada y no minimizada
+- `focusWindow(id)` ignora ventanas no focusable
+- `focusWindow(id)` cambia al desktop de la ventana si vive en otro workspace
+- `focusWindow(id)` tambien mueve `activeMonitorId` al monitor de la ventana
+- si existe un modal visible en el desktop, solo el modal superior puede recibir foco o participar en focus traversal
+- `focusNextWindow()` y `focusPreviousWindow()` ciclan entre ventanas focusable del desktop activo
+- minimizar o cerrar la ventana activa promueve la ventana focusable mas alta en `orderedWindowIds`
+- cuando cambia la ventana activa y esta en otro monitor, `activeMonitorId` la sigue
+- maximize ocupa el monitor completo de la ventana cuando `flags.maximizable` es `true`
+- minimize oculta la ventana y la deja en taskbar cuando `flags.minimizable` es `true`
+- restore recupera `restoreRect` dentro de los bounds del monitor asignado
+- close activa la siguiente ventana visible cuando `flags.closable` es `true`
+- cerrar un owner tambien cierra sus descendientes modales
+- `createWindow({ desktopId?, monitorId?, ownerWindowId? })` usa el desktop activo y el monitor activo por defecto, o el workspace del owner si es modal
+- `setMonitor(payload, desktopId?, monitorId?)` actualiza un monitor especifico o el monitor activo
+- `setDesktop(payload, desktopId?, monitorId?)` se mantiene como alias compatible de `setMonitor(...)`
+- la hidratacion migra automaticamente:
+  - version 1 de desktop unico al workspace `default` con monitor `default`
+  - version 2 multi-desktop al modelo de monitores por desktop
+  - version 3 multi-monitor al modelo actual con soporte modal
