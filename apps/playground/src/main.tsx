@@ -97,6 +97,10 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
   }
 
   const startDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!windowEntity.flags.movable) {
+      return;
+    }
+
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { x: event.clientX, y: event.clientY };
     manager.focusWindow(windowEntity.id);
@@ -117,6 +121,10 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
   };
 
   const startResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!windowEntity.flags.resizable) {
+      return;
+    }
+
     event.currentTarget.setPointerCapture(event.pointerId);
     resizeRef.current = { x: event.clientX, y: event.clientY };
   };
@@ -154,9 +162,27 @@ function WindowView({ id, zIndex }: { id: string; zIndex: number }) {
       <div className="titlebar" onPointerDown={startDrag} onPointerMove={onDrag} onPointerUp={stopDrag}>
         <span id={titleId}>{windowEntity.title ?? windowEntity.id}</span>
         <div className="actions">
-          <button aria-label={`Minimize ${windowEntity.title ?? windowEntity.id}`} onClick={() => manager.minimizeWindow(windowEntity.id)}>-</button>
-          <button aria-label={`Maximize ${windowEntity.title ?? windowEntity.id}`} onClick={() => manager.maximizeWindow(windowEntity.id)}>+</button>
-          <button aria-label={`Close ${windowEntity.title ?? windowEntity.id}`} onClick={() => manager.closeWindow(windowEntity.id)}>x</button>
+          <button
+            aria-label={`Minimize ${windowEntity.title ?? windowEntity.id}`}
+            disabled={!windowEntity.flags.minimizable}
+            onClick={() => manager.minimizeWindow(windowEntity.id)}
+          >
+            -
+          </button>
+          <button
+            aria-label={`Maximize ${windowEntity.title ?? windowEntity.id}`}
+            disabled={!windowEntity.flags.maximizable}
+            onClick={() => manager.maximizeWindow(windowEntity.id)}
+          >
+            +
+          </button>
+          <button
+            aria-label={`Close ${windowEntity.title ?? windowEntity.id}`}
+            disabled={!windowEntity.flags.closable}
+            onClick={() => manager.closeWindow(windowEntity.id)}
+          >
+            x
+          </button>
         </div>
       </div>
       <div className="content">Headless core + React adapter demo</div>

@@ -21,6 +21,8 @@ const DEFAULT_FLAGS = {
   resizable: true,
   movable: true,
   closable: true,
+  minimizable: true,
+  maximizable: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -133,11 +135,26 @@ function sanitizeWindow(id: WindowId, value: unknown, desktop: DesktopState): Wi
   let closed = sanitizeBoolean(parsedState.closed, false);
   let minimized = sanitizeBoolean(parsedState.minimized, false);
   let maximized = sanitizeBoolean(parsedState.maximized, false);
+  const flags = {
+    resizable: sanitizeBoolean(parsedFlags.resizable, DEFAULT_FLAGS.resizable),
+    movable: sanitizeBoolean(parsedFlags.movable, DEFAULT_FLAGS.movable),
+    closable: sanitizeBoolean(parsedFlags.closable, DEFAULT_FLAGS.closable),
+    minimizable: sanitizeBoolean(parsedFlags.minimizable, DEFAULT_FLAGS.minimizable),
+    maximizable: sanitizeBoolean(parsedFlags.maximizable, DEFAULT_FLAGS.maximizable),
+  };
 
   if (closed) {
     minimized = false;
     maximized = false;
   } else if (minimized) {
+    maximized = false;
+  }
+
+  if (!flags.minimizable) {
+    minimized = false;
+  }
+
+  if (!flags.maximizable) {
     maximized = false;
   }
   const title = sanitizeString(value.title);
@@ -153,11 +170,7 @@ function sanitizeWindow(id: WindowId, value: unknown, desktop: DesktopState): Wi
       ? getDesktopRect(desktop)
       : sanitizeRect(value.rect, restoreRect, desktop),
     restoreRect,
-    flags: {
-      resizable: sanitizeBoolean(parsedFlags.resizable, DEFAULT_FLAGS.resizable),
-      movable: sanitizeBoolean(parsedFlags.movable, DEFAULT_FLAGS.movable),
-      closable: sanitizeBoolean(parsedFlags.closable, DEFAULT_FLAGS.closable),
-    },
+    flags,
     ...(title !== undefined ? { title } : {}),
   };
 }

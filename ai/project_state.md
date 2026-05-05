@@ -30,6 +30,12 @@
   - close
   - set desktop
   - hydrate state
+- Window capabilities now cover:
+  - `resizable`
+  - `movable`
+  - `closable`
+  - `minimizable`
+  - `maximizable`
 - Desktop snap primitives are implemented in the core:
   - optional desktop-edge snapping via `desktop.snap.threshold`
   - snapping applies to move and resize operations
@@ -66,6 +72,7 @@
   - bottom-right resize
   - focus
   - minimize/maximize/close
+  - disabled action controls when window capabilities disallow minimize/maximize/close
   - localStorage persistence via `createWindowManager().serialize()` / `.hydrate()`
   - accessibility affordances such as roles, labels, focusable windows, and visible focus rings
 - Playground persistence bootstrap is isolated in `apps/playground/src/persistence.ts` and covered by tests
@@ -92,7 +99,6 @@
 
 ## Known Issues / Risks
 
-- Window capability flags currently cover only `resizable`, `movable`, and `closable`
 - UI-side automated coverage is still basic:
   - React tests currently validate server-rendered hook/provider wiring only
   - playground tests currently validate persistence bootstrap only, not pointer or keyboard interactions
@@ -107,7 +113,7 @@
 ## Current Development Focus
 
 - Inferred focus from repo docs and backlog artifacts:
-  - validate the new release scaffolding in real CI/publishing credentials
+  - formalize focus policy behavior
   - expand UI interaction coverage beyond the current persistence and adapter wiring tests
   - add more performance work only if further hotspots appear after measurement
 
@@ -156,4 +162,5 @@
 - React adapter coverage now lives in `packages/react/tests/index.test.tsx`
 - Playground coverage now lives in `apps/playground/src/persistence.test.ts`
 - The latest core performance pass optimized `packages/core/src/reducer.ts` to preserve state identity for common no-op operations and to batch desktop updates
+- Window capabilities now include `minimizable` and `maximizable`, with core enforcement and matching disabled controls in the playground
 - `changeset status` passed after adding the pending release note

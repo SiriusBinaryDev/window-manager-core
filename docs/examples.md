@@ -30,6 +30,7 @@ wm.createWindow({
   id: 'terminal',
   title: 'Terminal',
   rect: { x: 180, y: 120, width: 560, height: 320 },
+  flags: { minimizable: false, maximizable: false },
 });
 
 wm.focusWindow('terminal');

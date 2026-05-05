@@ -33,6 +33,8 @@ export interface WindowFlags {
   resizable: boolean;
   movable: boolean;
   closable: boolean;
+  minimizable: boolean;
+  maximizable: boolean;
 }
 
 export interface WindowStateFlags {

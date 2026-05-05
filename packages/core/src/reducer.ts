@@ -26,6 +26,8 @@ const DEFAULT_FLAGS = {
   resizable: true,
   movable: true,
   closable: true,
+  minimizable: true,
+  maximizable: true,
 };
 
 function getDesktopRect(desktop: DesktopState): Rect {
@@ -297,7 +299,12 @@ export function windowManagerReducer(
 
     case 'MAXIMIZE_WINDOW': {
       const windowEntity = state.windows[command.payload.id];
-      if (!windowEntity || windowEntity.state.closed || windowEntity.state.maximized) {
+      if (
+        !windowEntity ||
+        !windowEntity.flags.maximizable ||
+        windowEntity.state.closed ||
+        windowEntity.state.maximized
+      ) {
         return state;
       }
 
@@ -317,6 +324,10 @@ export function windowManagerReducer(
 
     case 'MINIMIZE_WINDOW': {
       const minimized = patchWindow(state, command.payload.id, (current) => {
+        if (!current.flags.minimizable) {
+          return current;
+        }
+
         if (current.state.minimized && !current.state.maximized) {
           return current;
         }

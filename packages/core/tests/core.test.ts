@@ -68,6 +68,19 @@ describe('window manager core', () => {
     expect(state.windows['1'].state.minimized).toBe(false);
   });
 
+  it('does not minimize windows when the capability is disabled', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({ id: '1', flags: { minimizable: false } }),
+    );
+
+    const nextState = windowManagerReducer(state, commands.minimizeWindow('1'));
+
+    expect(nextState).toBe(state);
+    expect(nextState.windows['1'].state.minimized).toBe(false);
+  });
+
   it('maximize and restore window', () => {
     let state = createInitialState();
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
@@ -76,6 +89,19 @@ describe('window manager core', () => {
     expect(state.windows['1'].state.maximized).toBe(true);
     state = windowManagerReducer(state, commands.restoreWindow('1'));
     expect(state.windows['1'].rect).toEqual(before);
+  });
+
+  it('does not maximize windows when the capability is disabled', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({ id: '1', flags: { maximizable: false } }),
+    );
+
+    const nextState = windowManagerReducer(state, commands.maximizeWindow('1'));
+
+    expect(nextState).toBe(state);
+    expect(nextState.windows['1'].state.maximized).toBe(false);
   });
 
   it('closes window and updates active', () => {
@@ -267,13 +293,13 @@ describe('window manager core', () => {
             state: { minimized: false, maximized: false, closed: false },
             rect: { x: 250, y: 150, width: 500, height: 500 },
             restoreRect: { x: -50, y: -20, width: 999, height: 999 },
-            flags: { resizable: 'yes', movable: false, closable: true },
+            flags: { resizable: 'yes', movable: false, closable: true, minimizable: false, maximizable: 0 },
           },
           two: {
             state: { minimized: true, maximized: true, closed: false },
             rect: { x: 500, y: 500, width: 50, height: 50 },
             restoreRect: { x: 500, y: 500, width: 10, height: 10 },
-            flags: { resizable: true, movable: true, closable: true },
+            flags: { resizable: true, movable: true, closable: true, minimizable: true, maximizable: true },
           },
         },
         orderedWindowIds: ['ghost', 'one', 'one'],
@@ -290,10 +316,52 @@ describe('window manager core', () => {
     expect(hydrated?.windows.one.id).toBe('one');
     expect(hydrated?.windows.one.rect).toEqual({ x: 0, y: 0, width: 300, height: 200 });
     expect(hydrated?.windows.one.restoreRect).toEqual({ x: 0, y: 0, width: 300, height: 200 });
-    expect(hydrated?.windows.one.flags).toEqual({ resizable: true, movable: false, closable: true });
+    expect(hydrated?.windows.one.flags).toEqual({
+      resizable: true,
+      movable: false,
+      closable: true,
+      minimizable: false,
+      maximizable: true,
+    });
     expect(hydrated?.windows.two.state).toEqual({ minimized: true, maximized: false, closed: false });
     expect(hydrated?.windows.two.rect).toEqual({ x: 140, y: 80, width: 160, height: 120 });
     expect(hydrated?.windows.two.restoreRect).toEqual({ x: 140, y: 80, width: 160, height: 120 });
+  });
+
+  it('sanitizes minimized and maximized state when capabilities are disabled', () => {
+    const raw = JSON.stringify({
+      version: 1,
+      state: {
+        version: 1,
+        desktop: {
+          size: { width: 640, height: 480 },
+          bounds: { minX: 0, minY: 0, maxX: 640, maxY: 480 },
+        },
+        windows: {
+          one: {
+            id: 'one',
+            state: { minimized: true, maximized: false, closed: false },
+            rect: { x: 40, y: 40, width: 200, height: 120 },
+            restoreRect: { x: 40, y: 40, width: 200, height: 120 },
+            flags: { minimizable: false, maximizable: true },
+          },
+          two: {
+            id: 'two',
+            state: { minimized: false, maximized: true, closed: false },
+            rect: { x: 80, y: 80, width: 200, height: 120 },
+            restoreRect: { x: 80, y: 80, width: 200, height: 120 },
+            flags: { minimizable: true, maximizable: false },
+          },
+        },
+        orderedWindowIds: ['one', 'two'],
+        activeWindowId: 'two',
+      },
+    });
+
+    const hydrated = hydrateState(raw);
+
+    expect(hydrated?.windows.one.state.minimized).toBe(false);
+    expect(hydrated?.windows.two.state.maximized).toBe(false);
   });
 
   it('sanitizes reducer hydrate command payloads', () => {
@@ -312,7 +380,13 @@ describe('window manager core', () => {
             state: { minimized: false, maximized: false, closed: false },
             rect: { x: 400, y: 400, width: 200, height: 200 },
             restoreRect: { x: 400, y: 400, width: 200, height: 200 },
-            flags: { resizable: true, movable: true, closable: true },
+            flags: {
+              resizable: true,
+              movable: true,
+              closable: true,
+              minimizable: true,
+              maximizable: true,
+            },
           },
         },
         orderedWindowIds: ['missing', 'one'],

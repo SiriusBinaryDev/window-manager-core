@@ -4,7 +4,7 @@
 
 ## ¿Para qué sirve?
 
-Permite gestionar ventanas con identidad, foco, z-order, minimizar/maximizar/restaurar/cerrar, drag/resize, límites de escritorio, taskbar y persistencia de estado serializable, sin acoplar la lógica a un framework de UI.
+Permite gestionar ventanas con identidad, foco, z-order, minimizar/maximizar/restaurar/cerrar, drag/resize, límites de escritorio, taskbar, capacidades por ventana y persistencia de estado serializable, sin acoplar la lógica a un framework de UI.
 
 ## Ejemplo básico
 
@@ -91,6 +91,11 @@ Tipos principales reexportados desde `types.ts`:
 - `Rect`
 - `Bounds`
 - `WindowFlags`
+  - `resizable`
+  - `movable`
+  - `closable`
+  - `minimizable`
+  - `maximizable`
 - `WindowStateFlags`
 - `ResizeEdge`
 - `WindowManagerCommand`
@@ -111,6 +116,14 @@ Provider que acepta `manager?: WindowManager`. Si no recibe uno, crea una instan
 - `useDesktop()`: devuelve `WindowManagerState['desktop']`
 - `useTaskbar()`: devuelve las ventanas no cerradas
 - `useVisibleWindows()`: devuelve las ventanas no minimizadas ni cerradas
+
+Las capacidades por ventana se configuran desde `createWindow({ flags })` y hoy permiten activar o desactivar:
+
+- resize
+- move
+- close
+- minimize
+- maximize
 
 ## Ejemplo React
 

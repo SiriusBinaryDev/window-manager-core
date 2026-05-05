@@ -17,13 +17,13 @@ interface WindowManagerState {
 - `state`: `minimized`, `maximized`, `closed`
 - `rect`
 - `restoreRect`
-- `flags`: `resizable`, `movable`, `closable`
+- `flags`: `resizable`, `movable`, `closable`, `minimizable`, `maximizable`
 
 ## Reglas clave
 
 - focus sube z-order.
 - solo una ventana activa.
-- maximize ocupa desktop completo.
-- minimize oculta en desktop y queda en taskbar.
+- maximize ocupa desktop completo cuando `flags.maximizable` es `true`.
+- minimize oculta en desktop y queda en taskbar cuando `flags.minimizable` es `true`.
 - restore recupera `restoreRect`.
-- close activa la siguiente ventana visible.
+- close activa la siguiente ventana visible cuando `flags.closable` es `true`.

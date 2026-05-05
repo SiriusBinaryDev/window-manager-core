@@ -2,7 +2,7 @@
 
 ## Title
 
-- Improve performance for larger numbers of windows
+- Expand window flags so minimization and maximization capabilities can be configured
 
 ## Status
 
@@ -10,46 +10,50 @@
 
 ## Objective
 
-- Reduce avoidable state churn in the core so large window sets do less unnecessary work during focus, move, resize, and desktop updates
+- Extend the per-window capability model so minimize and maximize behavior can be disabled just like move, resize, and close
 
 ## Context
 
-- Release workflow hardening is complete locally, but real publish validation is still blocked on repository secrets and npm access
-- The next local product task from `ai/tasks.md` was performance work in `packages/core`
-- This pass stayed in the core implementation and did not change the public API
+- Release validation is intentionally deferred for now
+- The existing capability model only covered `resizable`, `movable`, and `closable`
+- The next most necessary feature task was closing that inconsistency in the core API and the playground UI
 
 ## Relevant Files
 
+- `packages/core/src/types.ts`
 - `packages/core/src/reducer.ts`
+- `packages/core/src/serialization.ts`
 - `packages/core/tests/core.test.ts`
-- `ai/tasks.md`
+- `apps/playground/src/main.tsx`
+- `README.md`
+- `docs/state-model.md`
+- `docs/examples.md`
 
 ## Constraints
 
-- Keep business-rule changes in `packages/core`
-- Preserve the public API and existing behavior
-- Prefer internal optimizations that reduce unnecessary state/object churn
+- Keep the feature centered in `packages/core`
+- Preserve backward compatibility by defaulting the new capabilities to `true`
+- Ensure the playground UI reflects disabled capabilities instead of exposing dead controls
 
 ## Definition Of Done
 
-- Core hot paths avoid no-op state updates where practical
-- Desktop updates do not rebuild window state repeatedly when values are unchanged
-- The optimization is covered by automated tests and reflected in the AI continuity files
+- `WindowFlags` includes `minimizable` and `maximizable`
+- core commands respect the new flags
+- hydration/serialization preserve and sanitize the new flags
+- playground controls reflect disabled minimize/maximize/close behavior
+- docs and AI continuity files reflect the new feature
 
 ## Notes
 
 - Completed in this session:
-  - avoided no-op state recreation when focusing the already active front window
-  - avoided no-op state recreation for zero-delta moves and unchanged clamped resizes
-  - skipped single-window focus rotation churn
-  - batched `SET_DESKTOP` window updates into a single pass instead of repeated state rebuilding
-  - skipped desktop updates entirely when desktop values and affected rects are unchanged
-  - added core tests that lock in the no-op state sharing behavior
+  - added `minimizable` and `maximizable` to `WindowFlags`
+  - blocked core minimize/maximize commands when the corresponding capability is disabled
+  - sanitized hydrated state so disabled capabilities cannot leave windows minimized/maximized inconsistently
+  - updated the playground to disable action buttons and ignore drag/resize starts when capabilities are disabled
+  - updated README and docs to document the expanded capability model
 - Verification completed with:
-  - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
   - `pnpm.cmd -r test`
-- Next suggested local task from `ai/tasks.md`:
-  - expand React/playground interaction coverage beyond persistence and provider-hook wiring
-- Remaining external workflow task:
-  - validate the release workflow in GitHub once `NPM_TOKEN` and npm publish permissions are available
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
+- Next suggested local feature task from `ai/tasks.md`:
+  - formalize focus policy behavior
