@@ -12,6 +12,8 @@
   - `@typescript-eslint/recommended`
   - `prettier`
 - Human-facing docs currently use Spanish; keep language consistent with the file being edited
+- Commit every implemented feature as its own separate git commit; do not bundle unrelated completed features together
+- If an implementation requires an important product, API, architecture, persistence, or workflow decision, stop and ask the user before choosing on their behalf
 
 ## Language Conventions
 
@@ -69,3 +71,5 @@
 - For behavior changes, update core code and tests first
 - If public APIs change, verify impacts in both `packages/react` and `apps/playground`
 - If persistence behavior changes, verify both `serializeState()` and playground localStorage hydration
+- Keep commits scoped to a single completed feature or tightly related fix
+- Escalate important implementation decisions to the user instead of silently making them when multiple reasonable directions exist

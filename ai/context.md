@@ -96,3 +96,5 @@
 - Changing window behavior usually means touching reducer, selectors, math helpers, and core tests together
 - `orderedWindowIds` and `activeWindowId` jointly define focus and stacking behavior
 - Persistence format matters because the playground hydrates saved state on startup
+- Completed feature work should be committed in separate, focused commits
+- Important implementation decisions should be surfaced to the user for approval instead of being made implicitly

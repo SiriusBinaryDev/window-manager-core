@@ -105,6 +105,8 @@
 ## Notes For Next Session
 
 - Start in `packages/core` for any behavior change; update React/playground only after the core API is settled
+- Commit each completed feature in its own separate commit
+- Ask the user before making an important implementation decision when more than one reasonable direction exists
 - Hydration hardening was implemented in `packages/core/src/serialization.ts` and enforced in `packages/core/src/reducer.ts`
 - Workspace setup was repaired by reinstalling with `pnpm`; root `package-lock.json` was removed and `pnpm-lock.yaml` was generated
 - Root `tsconfig.base.json` now maps `@window-manager/core` and `@window-manager/react` to source entry points
