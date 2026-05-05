@@ -85,7 +85,7 @@
   - monitor creation and switching within the active desktop
   - modal backdrop rendering
   - pointer drag
-  - bottom-right resize
+  - bottom-right resize only
   - focus
   - minimize, maximize, close
   - localStorage persistence
@@ -115,12 +115,13 @@
 ## Current Development Focus
 
 - The important/core feature set is complete
-- Move to release validation for the first publishable feature set
-- Revisit external publish setup after local validation
+- Next requested UI task: expose edge and corner resizing in the playground using the existing core `ResizeEdge` support
+- Revisit release validation after that scoped playground improvement
 
 ## Notes For Next Session
 
 - Start in `packages/core` for any behavior change; update React and playground only after the core API is settled
+- For the current next task, start in `apps/playground/src/App.tsx` because the core resize behavior is already implemented
 - Commit each completed feature in its own separate commit
 - Ask the user before making an important implementation decision when more than one reasonable direction exists
 - Direct typechecks passed with:

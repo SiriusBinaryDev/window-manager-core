@@ -2,7 +2,7 @@
 
 ## Title
 
-- Release validation for the first publishable feature set
+- Expose edge and corner resizing in the playground
 
 ## Status
 
@@ -10,7 +10,7 @@
 
 ## Objective
 
-- Validate the completed core feature set and release workflow before the first public publish
+- Update the playground UI so windows can be resized by dragging edges and corners, reusing the resize-edge support that already exists in the core
 
 ## Context
 
@@ -18,38 +18,37 @@
   - multi-desktop support
   - multi-monitor support
   - modal windows
-- The important/core feature set is now done, so work can move to release validation
-- Modal support is implemented:
-  - modal windows use `ownerWindowId`
-  - a modal inherits the desktop and monitor of its owner
-  - only the topmost visible modal in a desktop can receive focus or participate in traversal
-  - closing an owner window also closes its modal descendants
-  - persisted state version is now `4`
-  - version `1`, `2`, and `3` payloads migrate into the current state shape
-- The playground regression where minimize, maximize, and close buttons did not work was fixed by isolating those controls from the drag surface and covering them with tests
+- The important/core feature set is now done
+- The core already supports all resize edges through `ResizeEdge` and `manager.resizeWindow(id, edge, deltaX, deltaY)`
+- The current limitation is only in the playground:
+  - it renders a single bottom-right resize handle
+  - it always calls `resizeWindow(..., 'bottom-right', ...)`
+- The user explicitly asked to make edge resizing the next task
 
 ## Relevant Files
 
-- `.github/workflows/release.yml`
-- `docs/releasing.md`
+- `apps/playground/src/App.tsx`
+- `apps/playground/src/styles.css`
+- `apps/playground/src/App.test.tsx`
+- `packages/core/src/types.ts`
+- `packages/core/src/math.ts`
 - `README.md`
-- `package.json`
-- `packages/core/package.json`
-- `packages/react/package.json`
-- `.changeset/`
+- `docs/examples.md`
 
 ## Constraints
 
-- Do not re-open unrelated feature work during release validation
-- Keep release changes scoped to packaging, workflow, documentation, and verification
-- Ask the user before making any publish-policy or versioning workflow change that is not already implied by the current Changesets setup
+- Keep the change scoped to the playground unless a real core gap is discovered
+- Preserve the current core resize semantics
+- Do not refactor unrelated playground behavior
+- If the UI needs a significant interaction-model choice, ask the user before choosing a surprising behavior
 
 ## Definition Of Done
 
-- release docs match the implemented API
-- package metadata and build outputs are coherent
-- release workflow assumptions are explicit
-- remaining publish blockers are documented clearly if external access is still required
+- the playground exposes draggable resize handles for edges and corners
+- each handle maps to the correct `ResizeEdge`
+- existing maximize, minimize, close, drag, and modal flows still work
+- tests cover at least one non-bottom-right resize path
+- docs and AI continuity files stay consistent if the public demo behavior changes materially
 
 ## Notes
 

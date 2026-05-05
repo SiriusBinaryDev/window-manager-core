@@ -8,12 +8,15 @@
 
 ## Now
 
-- Validate the release workflow with real CI secrets when publishing is intended
-  - local workflow hardening and operator docs are complete
-  - external publish validation is deferred for now
+- Expose edge and corner resizing in the playground
+  - the core already supports all `ResizeEdge` values
+  - the current limitation is the demo UI only
 
 ## Next
 
+- Validate the release workflow with real CI secrets when publishing is intended
+  - local workflow hardening and operator docs are complete
+  - external publish validation is deferred for now
 - Add advanced selectors or adapter optimizations if render pressure appears
 - Improve performance for larger numbers of windows if new measured hotspots appear
 
