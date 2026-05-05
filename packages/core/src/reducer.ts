@@ -28,7 +28,6 @@ const DEFAULT_FLAGS = {
   closable: true,
 };
 
-
 function getDesktopRect(desktop: DesktopState): Rect {
   return {
     x: desktop.bounds.minX,
@@ -54,12 +53,34 @@ function findNextActiveId(state: WindowManagerState): WindowId | null {
   return null;
 }
 
-function bringToFront(state: WindowManagerState, id: WindowId): WindowManagerState {
-  const rest = state.orderedWindowIds.filter((windowId) => windowId !== id);
-  return {
-    ...state,
-    orderedWindowIds: [...rest, id],
-  };
+function rectEquals(left: Rect, right: Rect): boolean {
+  return (
+    left.x === right.x &&
+    left.y === right.y &&
+    left.width === right.width &&
+    left.height === right.height
+  );
+}
+
+function desktopEquals(left: DesktopState, right: DesktopState): boolean {
+  return (
+    left.size.width === right.size.width &&
+    left.size.height === right.size.height &&
+    left.bounds.minX === right.bounds.minX &&
+    left.bounds.minY === right.bounds.minY &&
+    left.bounds.maxX === right.bounds.maxX &&
+    left.bounds.maxY === right.bounds.maxY &&
+    (left.snap?.threshold ?? null) === (right.snap?.threshold ?? null)
+  );
+}
+
+function bringToFront(orderedWindowIds: WindowId[], id: WindowId): WindowId[] {
+  if (orderedWindowIds[orderedWindowIds.length - 1] === id) {
+    return orderedWindowIds;
+  }
+
+  const rest = orderedWindowIds.filter((windowId) => windowId !== id);
+  return [...rest, id];
 }
 
 function getVisibleWindowIds(state: WindowManagerState): WindowId[] {
@@ -74,7 +95,7 @@ function rotateVisibleWindowOrder(
   direction: 'next' | 'previous',
 ): WindowManagerState | null {
   const visibleWindowIds = getVisibleWindowIds(state);
-  if (visibleWindowIds.length === 0) {
+  if (visibleWindowIds.length <= 1) {
     return null;
   }
 
@@ -110,11 +131,16 @@ function patchWindow(
     return state;
   }
 
+  const nextWindowEntity = updater(windowEntity);
+  if (nextWindowEntity === windowEntity) {
+    return state;
+  }
+
   return {
     ...state,
     windows: {
       ...state.windows,
-      [id]: updater(windowEntity),
+      [id]: nextWindowEntity,
     },
   };
 }
@@ -182,9 +208,14 @@ export function windowManagerReducer(
         return state;
       }
 
-      const layered = bringToFront(state, command.payload.id);
+      const orderedWindowIds = bringToFront(state.orderedWindowIds, command.payload.id);
+      if (orderedWindowIds === state.orderedWindowIds && state.activeWindowId === command.payload.id) {
+        return state;
+      }
+
       return {
-        ...layered,
+        ...state,
+        orderedWindowIds,
         activeWindowId: command.payload.id,
       };
     }
@@ -209,9 +240,16 @@ export function windowManagerReducer(
       }
 
       return patchWindow(state, command.payload.id, (current) => {
+        if (command.payload.deltaX === 0 && command.payload.deltaY === 0) {
+          return current;
+        }
+
         const moved = moveRect(current.rect, command.payload.deltaX, command.payload.deltaY);
         const snapped = snapRectToBounds(moved, state.desktop.bounds, getSnapThreshold(state.desktop));
         const clamped = clampRectToBounds(snapped, state.desktop.bounds);
+        if (rectEquals(clamped, current.rect)) {
+          return current;
+        }
 
         return {
           ...current,
@@ -228,6 +266,10 @@ export function windowManagerReducer(
       }
 
       return patchWindow(state, command.payload.id, (current) => {
+        if (command.payload.deltaX === 0 && command.payload.deltaY === 0) {
+          return current;
+        }
+
         const resized = resizeRect(
           current.rect,
           command.payload.edge,
@@ -241,6 +283,9 @@ export function windowManagerReducer(
           getSnapThreshold(state.desktop),
         );
         const clamped = clampRectToBounds(snapped, state.desktop.bounds);
+        if (rectEquals(clamped, current.rect)) {
+          return current;
+        }
 
         return {
           ...current,
@@ -256,23 +301,31 @@ export function windowManagerReducer(
         return state;
       }
 
+      const orderedWindowIds = bringToFront(state.orderedWindowIds, command.payload.id);
+
       return {
         ...patchWindow(state, command.payload.id, (current) => ({
           ...current,
           state: { ...current.state, minimized: false, maximized: true },
-          restoreRect: current.state.maximized ? current.restoreRect : current.rect,
+          restoreRect: current.rect,
           rect: getDesktopRect(state.desktop),
         })),
         activeWindowId: command.payload.id,
-        orderedWindowIds: bringToFront(state, command.payload.id).orderedWindowIds,
+        orderedWindowIds,
       };
     }
 
     case 'MINIMIZE_WINDOW': {
-      const minimized = patchWindow(state, command.payload.id, (current) => ({
-        ...current,
-        state: { ...current.state, minimized: true, maximized: false },
-      }));
+      const minimized = patchWindow(state, command.payload.id, (current) => {
+        if (current.state.minimized && !current.state.maximized) {
+          return current;
+        }
+
+        return {
+          ...current,
+          state: { ...current.state, minimized: true, maximized: false },
+        };
+      });
 
       if (minimized === state) {
         return state;
@@ -291,15 +344,26 @@ export function windowManagerReducer(
         return state;
       }
 
-      const restoredState = patchWindow(state, command.payload.id, (current) => ({
-        ...current,
-        state: { ...current.state, minimized: false, maximized: false },
-        rect: clampRectToBounds(current.restoreRect, state.desktop.bounds),
-      }));
-      const layered = bringToFront(restoredState, command.payload.id);
+      const restoredState = patchWindow(state, command.payload.id, (current) => {
+        const nextRect = clampRectToBounds(current.restoreRect, state.desktop.bounds);
+        const hasStateChange = current.state.minimized || current.state.maximized;
+        const hasRectChange = !rectEquals(nextRect, current.rect);
+
+        if (!hasStateChange && !hasRectChange) {
+          return current;
+        }
+
+        return {
+          ...current,
+          state: { ...current.state, minimized: false, maximized: false },
+          rect: nextRect,
+        };
+      });
+      const orderedWindowIds = bringToFront(restoredState.orderedWindowIds, command.payload.id);
 
       return {
-        ...layered,
+        ...restoredState,
+        orderedWindowIds,
         activeWindowId: command.payload.id,
       };
     }
@@ -328,28 +392,39 @@ export function windowManagerReducer(
     }
 
     case 'SET_DESKTOP': {
-      let nextState: WindowManagerState = {
-        ...state,
-        desktop: command.payload,
-      };
+      const nextDesktop = command.payload;
+      let nextWindows: WindowManagerState['windows'] | null = null;
 
       for (const windowId of state.orderedWindowIds) {
-        nextState = patchWindow(nextState, windowId, (current) => {
-          if (current.state.maximized) {
-            return {
-              ...current,
-              rect: getDesktopRect(command.payload),
-            };
-          }
+        const current = state.windows[windowId];
+        if (!current || current.state.closed) {
+          continue;
+        }
 
-          return {
-            ...current,
-            rect: clampRectToBounds(current.rect, command.payload.bounds),
-          };
-        });
+        const nextRect = current.state.maximized
+          ? getDesktopRect(nextDesktop)
+          : clampRectToBounds(current.rect, nextDesktop.bounds);
+
+        if (rectEquals(nextRect, current.rect)) {
+          continue;
+        }
+
+        nextWindows ??= { ...state.windows };
+        nextWindows[windowId] = {
+          ...current,
+          rect: nextRect,
+        };
       }
 
-      return nextState;
+      if (!nextWindows && desktopEquals(state.desktop, nextDesktop)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        desktop: nextDesktop,
+        windows: nextWindows ?? state.windows,
+      };
     }
 
     case 'HYDRATE_STATE': {

@@ -33,6 +33,11 @@
 - Desktop snap primitives are implemented in the core:
   - optional desktop-edge snapping via `desktop.snap.threshold`
   - snapping applies to move and resize operations
+- Core reducer hot paths now avoid several no-op updates:
+  - focusing the already active front window returns the same state
+  - zero-delta moves and unchanged clamped resizes return the same state
+  - single-window focus rotation returns the same state
+  - `SET_DESKTOP` batches changed windows in one pass and skips unchanged desktop updates
 - Keyboard focus traversal is implemented:
   - core commands and manager methods for next/previous window focus
   - playground buttons and shortcuts for traversal
@@ -81,7 +86,6 @@
 
 ## Not Implemented
 
-- Performance work for large window counts
 - Multi-desktop support
 - Multi-monitor support
 - Modal windows / advanced focus policies
@@ -104,8 +108,8 @@
 
 - Inferred focus from repo docs and backlog artifacts:
   - validate the new release scaffolding in real CI/publishing credentials
-  - improve performance for larger numbers of windows
-  - expand UI interaction coverage beyond the current persistence and adapter wiring tests when needed
+  - expand UI interaction coverage beyond the current persistence and adapter wiring tests
+  - add more performance work only if further hotspots appear after measurement
 
 ## Notes For Next Session
 
@@ -139,6 +143,9 @@
   - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
 - The workspace test command now passes with:
   - `pnpm.cmd -r test`
+- The latest core performance pass was verified with:
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
+  - `pnpm.cmd -r test`
 - Publishable package builds now pass with:
   - `pnpm.cmd build:packages`
 - Direct typechecks still pass for the touched non-core packages:
@@ -148,4 +155,5 @@
 - Playground persistence setup now lives in `apps/playground/src/persistence.ts`
 - React adapter coverage now lives in `packages/react/tests/index.test.tsx`
 - Playground coverage now lives in `apps/playground/src/persistence.test.ts`
+- The latest core performance pass optimized `packages/core/src/reducer.ts` to preserve state identity for common no-op operations and to batch desktop updates
 - `changeset status` passed after adding the pending release note

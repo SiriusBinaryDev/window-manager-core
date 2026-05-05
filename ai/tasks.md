@@ -5,23 +5,20 @@
 - Validate the release workflow with real CI secrets when publishing is intended
   - local workflow hardening and operator docs are complete
   - external publish validation is still pending on secrets and npm access
+- Expand React/playground interaction coverage beyond persistence and provider-hook wiring
 
 ## Next
 
-- Improve performance for larger numbers of windows
-
-## Later
-
-- Expand React/playground interaction coverage beyond persistence and provider-hook wiring
 - Expand window flags if minimization/maximization capabilities need to be configurable
 - Formalize focus policy behavior
 - Add advanced selectors or adapter optimizations if render pressure appears
+- Improve performance for larger numbers of windows if new measured hotspots appear
 - Add semantic changelog/release notes workflow if publishing is enabled
 
-## Icebox
+## Later
 
-- Multi-desktop
-- Multi-monitor
+- Multi-desktop support
+- Multi-monitor support
 - Advanced focus policies
 - Modal windows
 - Undo / redo

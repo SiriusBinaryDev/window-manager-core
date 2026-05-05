@@ -18,6 +18,15 @@ describe('window manager core', () => {
     expect(state.activeWindowId).toBe('1');
   });
 
+  it('does not recreate state when focusing the already active front window', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+
+    const nextState = windowManagerReducer(state, commands.focusWindow('1'));
+
+    expect(nextState).toBe(state);
+  });
+
   it('focus next window cycles through visible windows', () => {
     let state = createInitialState();
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
@@ -183,6 +192,15 @@ describe('window manager core', () => {
     expect(state.windows['1'].rect).toEqual({ x: 300, y: 40, width: 200, height: 120 });
   });
 
+  it('does not recreate state for no-op move commands', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+
+    const nextState = windowManagerReducer(state, commands.moveWindow('1', 0, 0));
+
+    expect(nextState).toBe(state);
+  });
+
   it('resizes windows with desktop snapping when enabled', () => {
     let state = createInitialState();
     state = windowManagerReducer(
@@ -203,6 +221,34 @@ describe('window manager core', () => {
     state = windowManagerReducer(state, commands.resizeWindow('1', 'right', 235, 0));
 
     expect(state.windows['1'].rect).toEqual({ x: 50, y: 40, width: 450, height: 120 });
+  });
+
+  it('does not recreate state when desktop values and clamped rects are unchanged', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(
+      state,
+      commands.setDesktop({
+        size: { width: 800, height: 600 },
+        bounds: { minX: 0, minY: 0, maxX: 800, maxY: 600 },
+      }),
+    );
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({
+        id: '1',
+        rect: { x: 100, y: 100, width: 200, height: 150 },
+      }),
+    );
+
+    const nextState = windowManagerReducer(
+      state,
+      commands.setDesktop({
+        size: { width: 800, height: 600 },
+        bounds: { minX: 0, minY: 0, maxX: 800, maxY: 600 },
+      }),
+    );
+
+    expect(nextState).toBe(state);
   });
 
   it('sanitizes hydrated state geometry and focus ordering', () => {
