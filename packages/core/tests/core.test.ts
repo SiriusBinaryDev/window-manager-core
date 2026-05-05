@@ -59,6 +59,33 @@ describe('window manager core', () => {
     expect(state.activeWindowId).toBe('3');
   });
 
+  it('focus traversal skips minimized and closed windows', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '3' }));
+    state = windowManagerReducer(state, commands.minimizeWindow('2'));
+    state = windowManagerReducer(state, commands.closeWindow('3'));
+
+    state = windowManagerReducer(state, commands.focusNextWindow());
+    expect(state.activeWindowId).toBe('1');
+
+    state = windowManagerReducer(state, commands.focusNextWindow());
+    expect(state.activeWindowId).toBe('1');
+  });
+
+  it('does not focus minimized windows directly', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
+    state = windowManagerReducer(state, commands.minimizeWindow('1'));
+
+    const nextState = windowManagerReducer(state, commands.focusWindow('1'));
+
+    expect(nextState).toBe(state);
+    expect(nextState.activeWindowId).toBe('2');
+  });
+
   it('minimize and restore window', () => {
     let state = createInitialState();
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
@@ -111,6 +138,53 @@ describe('window manager core', () => {
     state = windowManagerReducer(state, commands.closeWindow('2'));
     expect(state.windows['2'].state.closed).toBe(true);
     expect(state.activeWindowId).toBe('1');
+  });
+
+  it('minimizing the active window promotes the topmost remaining visible window', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '3' }));
+
+    state = windowManagerReducer(state, commands.minimizeWindow('3'));
+
+    expect(state.activeWindowId).toBe('2');
+  });
+
+  it('closing the active window skips minimized windows when choosing the next active window', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '3' }));
+    state = windowManagerReducer(state, commands.minimizeWindow('2'));
+
+    state = windowManagerReducer(state, commands.closeWindow('3'));
+
+    expect(state.activeWindowId).toBe('1');
+  });
+
+  it('restore brings a window to front and makes it active', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+    state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
+    state = windowManagerReducer(state, commands.minimizeWindow('1'));
+
+    state = windowManagerReducer(state, commands.restoreWindow('1'));
+
+    expect(state.activeWindowId).toBe('1');
+    expect(state.orderedWindowIds[state.orderedWindowIds.length - 1]).toBe('1');
+  });
+
+  it('clears the active window when no visible windows remain', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
+
+    state = windowManagerReducer(state, commands.minimizeWindow('1'));
+    expect(state.activeWindowId).toBeNull();
+
+    state = windowManagerReducer(state, commands.restoreWindow('1'));
+    state = windowManagerReducer(state, commands.closeWindow('1'));
+    expect(state.activeWindowId).toBeNull();
   });
 
   it('resizes with min size enforcement', () => {

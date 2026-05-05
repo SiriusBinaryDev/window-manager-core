@@ -47,6 +47,11 @@
 - Keyboard focus traversal is implemented:
   - core commands and manager methods for next/previous window focus
   - playground buttons and shortcuts for traversal
+  - focus policy is now explicit:
+    - only visible windows can receive focus
+    - traversal skips minimized and closed windows
+    - minimizing or closing the active window promotes the topmost remaining visible window
+    - restoring a window brings it to front and makes it active
 - Desktop-bound clamping during create, move, resize, restore, and desktop updates
 - Hydration sanitization now:
   - validates envelope structure
@@ -113,9 +118,9 @@
 ## Current Development Focus
 
 - Inferred focus from repo docs and backlog artifacts:
-  - formalize focus policy behavior
   - expand UI interaction coverage beyond the current persistence and adapter wiring tests
   - add more performance work only if further hotspots appear after measurement
+  - revisit release validation later when publishing is back in scope
 
 ## Notes For Next Session
 
@@ -163,4 +168,5 @@
 - Playground coverage now lives in `apps/playground/src/persistence.test.ts`
 - The latest core performance pass optimized `packages/core/src/reducer.ts` to preserve state identity for common no-op operations and to batch desktop updates
 - Window capabilities now include `minimizable` and `maximizable`, with core enforcement and matching disabled controls in the playground
+- Focus policy is now documented and covered by core regression tests
 - `changeset status` passed after adding the pending release note

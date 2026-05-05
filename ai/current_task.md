@@ -2,7 +2,7 @@
 
 ## Title
 
-- Expand window flags so minimization and maximization capabilities can be configured
+- Formalize focus policy behavior
 
 ## Status
 
@@ -10,50 +10,46 @@
 
 ## Objective
 
-- Extend the per-window capability model so minimize and maximize behavior can be disabled just like move, resize, and close
+- Turn the existing focus behavior into an explicit product contract so focus traversal, activation, minimize/close promotion, and restore semantics are documented and regression-tested
 
 ## Context
 
-- Release validation is intentionally deferred for now
-- The existing capability model only covered `resizable`, `movable`, and `closable`
-- The next most necessary feature task was closing that inconsistency in the core API and the playground UI
+- Release validation remains deferred
+- The current implementation already had a de facto focus model, but it was only partially documented and lightly tested
+- The goal of this pass was to make that behavior explicit rather than invent a new policy
 
 ## Relevant Files
 
-- `packages/core/src/types.ts`
 - `packages/core/src/reducer.ts`
-- `packages/core/src/serialization.ts`
 - `packages/core/tests/core.test.ts`
-- `apps/playground/src/main.tsx`
 - `README.md`
 - `docs/state-model.md`
-- `docs/examples.md`
 
 ## Constraints
 
-- Keep the feature centered in `packages/core`
-- Preserve backward compatibility by defaulting the new capabilities to `true`
-- Ensure the playground UI reflects disabled capabilities instead of exposing dead controls
+- Preserve the current focus behavior chosen by the user
+- Keep the logic in `packages/core`
+- Prefer clarifying and locking behavior over adding new surface area
 
 ## Definition Of Done
 
-- `WindowFlags` includes `minimizable` and `maximizable`
-- core commands respect the new flags
-- hydration/serialization preserve and sanitize the new flags
-- playground controls reflect disabled minimize/maximize/close behavior
-- docs and AI continuity files reflect the new feature
+- the current focus policy is documented as canonical behavior
+- core tests cover the key focus transitions and skip rules
+- shared focusability checks are explicit in the reducer
+- AI continuity files reflect the completed task
 
 ## Notes
 
 - Completed in this session:
-  - added `minimizable` and `maximizable` to `WindowFlags`
-  - blocked core minimize/maximize commands when the corresponding capability is disabled
-  - sanitized hydrated state so disabled capabilities cannot leave windows minimized/maximized inconsistently
-  - updated the playground to disable action buttons and ignore drag/resize starts when capabilities are disabled
-  - updated README and docs to document the expanded capability model
+  - extracted a shared focusability rule in the reducer for visible, focusable windows
+  - added tests for traversal skipping minimized/closed windows
+  - added tests for direct focus rejection on minimized windows
+  - added tests for active-window promotion on minimize/close
+  - added tests for restore bringing a window to front and making it active
+  - documented the canonical focus policy in README and `docs/state-model.md`
 - Verification completed with:
-  - `pnpm.cmd -r test`
+  - `.\\node_modules\\.bin\\vitest.cmd run packages\\core\\tests\\core.test.ts --pool vmThreads --maxWorkers 1`
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
+  - `pnpm.cmd -r test`
 - Next suggested local feature task from `ai/tasks.md`:
-  - formalize focus policy behavior
+  - expand React/playground interaction coverage beyond persistence and provider-hook wiring

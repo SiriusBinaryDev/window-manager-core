@@ -43,11 +43,15 @@ function getSnapThreshold(desktop: DesktopState): number {
   return desktop.snap?.threshold ?? 0;
 }
 
+function isWindowFocusable(windowEntity: WindowEntity | undefined): windowEntity is WindowEntity {
+  return !!windowEntity && !windowEntity.state.closed && !windowEntity.state.minimized;
+}
+
 function findNextActiveId(state: WindowManagerState): WindowId | null {
   for (let index = state.orderedWindowIds.length - 1; index >= 0; index -= 1) {
     const id = state.orderedWindowIds[index];
     const windowEntity = state.windows[id];
-    if (windowEntity && !windowEntity.state.closed && !windowEntity.state.minimized) {
+    if (isWindowFocusable(windowEntity)) {
       return id;
     }
   }
@@ -88,7 +92,7 @@ function bringToFront(orderedWindowIds: WindowId[], id: WindowId): WindowId[] {
 function getVisibleWindowIds(state: WindowManagerState): WindowId[] {
   return state.orderedWindowIds.filter((id) => {
     const windowEntity = state.windows[id];
-    return !!windowEntity && !windowEntity.state.closed && !windowEntity.state.minimized;
+    return isWindowFocusable(windowEntity);
   });
 }
 
@@ -206,7 +210,7 @@ export function windowManagerReducer(
 
     case 'FOCUS_WINDOW': {
       const windowEntity = state.windows[command.payload.id];
-      if (!windowEntity || windowEntity.state.closed || windowEntity.state.minimized) {
+      if (!isWindowFocusable(windowEntity)) {
         return state;
       }
 

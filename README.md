@@ -74,6 +74,17 @@ Lecturas derivadas disponibles:
 - `getVisibleWindows(state)`
 - `getTaskbarItems(state)`
 
+#### Politica de foco
+
+El comportamiento de foco actual queda definido asi:
+
+- solo las ventanas visibles pueden recibir foco
+- una ventana visible es una ventana no cerrada y no minimizada
+- `focusWindow(id)` ignora ventanas minimizadas o cerradas
+- `focusNextWindow()` y `focusPreviousWindow()` ciclan solo entre ventanas visibles
+- minimizar o cerrar la ventana activa promueve la ventana visible mas alta en z-order
+- `restoreWindow(id)` trae la ventana al frente y la convierte en activa
+
 #### Persistencia
 
 - `serializeState(state)`: genera un `SerializationEnvelope`

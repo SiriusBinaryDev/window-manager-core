@@ -2,7 +2,6 @@
 
 ## Now
 
-- Formalize focus policy behavior
 - Expand React/playground interaction coverage beyond persistence and provider-hook wiring
 
 ## Next
