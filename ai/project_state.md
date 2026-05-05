@@ -61,14 +61,27 @@
 - Imperative `createWindowManager()` facade with subscription and persistence helpers
 - Core selectors for:
   - single window lookup
+  - desktop lookup
+  - active desktop lookup
+  - desktop list lookup
   - active window
   - visible windows
   - taskbar items
+- Multi-desktop support is implemented:
+  - windows belong to exactly one desktop workspace through `window.desktopId`
+  - state now stores `desktops` plus `activeDesktopId`
+  - each desktop keeps its own `orderedWindowIds` and `activeWindowId`
+  - core commands now include `createDesktop(id, config?)` and `switchDesktop(id)`
+  - `setDesktop(payload, desktopId?)` updates the active desktop by default or an explicit desktop when requested
+  - `focusWindow(id)` and `restoreWindow(id)` auto-switch desktops when the target window lives elsewhere
+  - legacy single-desktop persisted state now migrates forward into the `default` workspace
 - React adapter:
   - `WindowManagerProvider`
   - `useWindowManager`
   - `useWindow`
   - `useDesktop`
+  - `useDesktops`
+  - `useActiveDesktopId`
   - `useTaskbar`
   - `useVisibleWindows`
   - adapter subscriptions now use stable manager-state snapshots before applying selectors, avoiding rerender loops for derived arrays
@@ -81,6 +94,7 @@
   - disabled action controls when window capabilities disallow minimize/maximize/close
   - localStorage persistence via `createWindowManager().serialize()` / `.hydrate()`
   - accessibility affordances such as roles, labels, focusable windows, and visible focus rings
+  - desktop creation and desktop switching controls for the active workspace
 - Playground persistence bootstrap is isolated in `apps/playground/src/persistence.ts` and covered by tests
 - Source-level TypeScript resolution now works across the workspace through root `tsconfig` path mappings
 - Vitest workspace source resolution is configured through:
@@ -99,7 +113,6 @@
 
 ## Not Implemented
 
-- Multi-desktop support
 - Multi-monitor support
 - Modal windows / advanced focus policies
 
@@ -119,9 +132,9 @@
 ## Current Development Focus
 
 - Inferred focus from repo docs and backlog artifacts:
-  - add more performance work only if further hotspots appear after measurement
-  - add advanced selectors or adapter optimizations if render pressure appears
-  - revisit release validation later when publishing is back in scope
+  - implement multi-monitor support as the next publish-gate feature
+  - then implement modal windows to complete the fixed first-publish feature list
+  - revisit release validation after the publish-gate feature list is complete
 
 ## Notes For Next Session
 
@@ -173,3 +186,9 @@
 - Window capabilities now include `minimizable` and `maximizable`, with core enforcement and matching disabled controls in the playground
 - Focus policy is now documented and covered by core regression tests
 - `changeset status` passed after adding the pending release note
+- Fixed feature-complete publish gate for the first release:
+  - multi-desktop support
+  - multi-monitor support
+  - modal windows
+- After those features are complete, explicitly tell the user the core/important feature set is done so publishing can move to release validation
+- The multi-desktop feature is now complete and verified with direct typechecks plus targeted core, React, and playground tests

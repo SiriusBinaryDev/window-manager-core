@@ -1,5 +1,6 @@
 import type {
   CreateWindowPayload,
+  DesktopId,
   DesktopState,
   ResizeEdge,
   WindowId,
@@ -11,6 +12,14 @@ export const commands = {
   createWindow: (payload: CreateWindowPayload): WindowManagerCommand => ({
     type: 'CREATE_WINDOW',
     payload,
+  }),
+  createDesktop: (id: DesktopId, desktop?: DesktopState): WindowManagerCommand => ({
+    type: 'CREATE_DESKTOP',
+    payload: { id, ...(desktop ? { desktop } : {}) },
+  }),
+  switchDesktop: (id: DesktopId): WindowManagerCommand => ({
+    type: 'SWITCH_DESKTOP',
+    payload: { id },
   }),
   focusWindow: (id: WindowId): WindowManagerCommand => ({
     type: 'FOCUS_WINDOW',
@@ -46,9 +55,9 @@ export const commands = {
     type: 'CLOSE_WINDOW',
     payload: { id },
   }),
-  setDesktop: (payload: DesktopState): WindowManagerCommand => ({
+  setDesktop: (desktop: DesktopState, desktopId?: DesktopId): WindowManagerCommand => ({
     type: 'SET_DESKTOP',
-    payload,
+    payload: { desktop, ...(desktopId ? { desktopId } : {}) },
   }),
   hydrateState: (payload: WindowManagerState): WindowManagerCommand => ({
     type: 'HYDRATE_STATE',

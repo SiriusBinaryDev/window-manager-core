@@ -1,6 +1,8 @@
-export const WINDOW_MANAGER_STATE_VERSION = 1;
+export const WINDOW_MANAGER_STATE_VERSION = 2;
+export const DEFAULT_DESKTOP_ID = 'default';
 
 export type WindowId = string;
+export type DesktopId = string;
 
 export interface Rect {
   x: number;
@@ -45,6 +47,7 @@ export interface WindowStateFlags {
 
 export interface WindowEntity {
   id: WindowId;
+  desktopId: DesktopId;
   title?: string;
   state: WindowStateFlags;
   rect: Rect;
@@ -52,16 +55,23 @@ export interface WindowEntity {
   flags: WindowFlags;
 }
 
+export interface DesktopWorkspace {
+  id: DesktopId;
+  desktop: DesktopState;
+  orderedWindowIds: WindowId[];
+  activeWindowId: WindowId | null;
+}
+
 export interface WindowManagerState {
   version: number;
   windows: Record<WindowId, WindowEntity>;
-  orderedWindowIds: WindowId[];
-  activeWindowId: WindowId | null;
-  desktop: DesktopState;
+  desktops: Record<DesktopId, DesktopWorkspace>;
+  activeDesktopId: DesktopId;
 }
 
 export interface CreateWindowPayload {
   id: WindowId;
+  desktopId?: DesktopId;
   title?: string;
   rect?: Partial<Rect>;
   flags?: Partial<WindowFlags>;
@@ -80,6 +90,8 @@ export type ResizeEdge =
 
 export type WindowManagerCommand =
   | { type: 'CREATE_WINDOW'; payload: CreateWindowPayload }
+  | { type: 'CREATE_DESKTOP'; payload: { id: DesktopId; desktop?: DesktopState } }
+  | { type: 'SWITCH_DESKTOP'; payload: { id: DesktopId } }
   | { type: 'FOCUS_WINDOW'; payload: { id: WindowId } }
   | { type: 'FOCUS_NEXT_WINDOW' }
   | { type: 'FOCUS_PREVIOUS_WINDOW' }
@@ -92,7 +104,7 @@ export type WindowManagerCommand =
   | { type: 'MINIMIZE_WINDOW'; payload: { id: WindowId } }
   | { type: 'RESTORE_WINDOW'; payload: { id: WindowId } }
   | { type: 'CLOSE_WINDOW'; payload: { id: WindowId } }
-  | { type: 'SET_DESKTOP'; payload: DesktopState }
+  | { type: 'SET_DESKTOP'; payload: { desktop: DesktopState; desktopId?: DesktopId } }
   | { type: 'HYDRATE_STATE'; payload: WindowManagerState };
 
 export interface SerializationEnvelope {

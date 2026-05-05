@@ -3,8 +3,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import {
+  useActiveDesktopId,
   WindowManagerProvider,
   useDesktop,
+  useDesktops,
   useTaskbar,
   useVisibleWindows,
   useWindow,
@@ -14,6 +16,8 @@ import {
 function Snapshot({ expectedManager }: { expectedManager: WindowManager }): React.JSX.Element {
   const manager = useWindowManager();
   const desktop = useDesktop();
+  const desktops = useDesktops();
+  const activeDesktopId = useActiveDesktopId();
   const taskbar = useTaskbar();
   const visibleWindows = useVisibleWindows();
   const windowEntity = useWindow('alpha');
@@ -21,7 +25,9 @@ function Snapshot({ expectedManager }: { expectedManager: WindowManager }): Reac
   return (
     <div
       data-manager-match={manager === expectedManager ? 'true' : 'false'}
+      data-active-desktop-id={activeDesktopId}
       data-desktop-width={String(desktop.size.width)}
+      data-desktop-count={String(desktops.length)}
       data-taskbar-count={String(taskbar.length)}
       data-visible-count={String(visibleWindows.length)}
       data-window-title={windowEntity?.title ?? ''}
@@ -52,7 +58,9 @@ describe('@window-manager/react', () => {
     );
 
     expect(markup).toContain('data-manager-match="true"');
+    expect(markup).toContain('data-active-desktop-id="default"');
     expect(markup).toContain('data-desktop-width="900"');
+    expect(markup).toContain('data-desktop-count="1"');
     expect(markup).toContain('data-taskbar-count="2"');
     expect(markup).toContain('data-visible-count="1"');
     expect(markup).toContain('data-window-title="Alpha window"');

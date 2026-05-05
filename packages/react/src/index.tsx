@@ -1,6 +1,8 @@
 import {
   createWindowManager,
   selectors,
+  type DesktopId,
+  type DesktopWorkspace,
   type WindowEntity,
   type WindowId,
   type WindowManager,
@@ -53,8 +55,16 @@ export function useWindow(id: WindowId): WindowEntity | null {
   return useStore((state) => selectors.getWindowById(state, id));
 }
 
-export function useDesktop(): WindowManagerState['desktop'] {
-  return useStore((state) => state.desktop);
+export function useDesktop(): DesktopWorkspace['desktop'] {
+  return useStore((state) => selectors.getActiveDesktop(state)?.desktop ?? selectors.getDesktops(state)[0]!.desktop);
+}
+
+export function useDesktops(): DesktopWorkspace[] {
+  return useStore((state) => selectors.getDesktops(state));
+}
+
+export function useActiveDesktopId(): DesktopId {
+  return useStore((state) => state.activeDesktopId);
 }
 
 export function useTaskbar(): WindowEntity[] {

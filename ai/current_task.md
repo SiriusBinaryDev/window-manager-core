@@ -2,57 +2,61 @@
 
 ## Title
 
-- Expand React/playground interaction coverage beyond persistence and provider-hook wiring
+- Implement multi-monitor support
 
 ## Status
 
-- Completed
+- Ready to start
 
 ## Objective
 
-- Add DOM-backed tests that exercise real React adapter subscriptions and real playground interactions instead of only server-rendered hook snapshots and persistence bootstrap logic
+- Extend the workspace model so the manager can reason about more than one monitor while preserving the completed multi-desktop isolation rules
 
 ## Context
 
-- Release validation remains deferred
-- Previous non-core coverage only proved provider wiring and persistence bootstrap behavior
-- This pass needed to cover actual rerender/subscription behavior and user-driven playground interactions
+- Multi-desktop support is complete:
+  - each window belongs to exactly one desktop through `window.desktopId`
+  - each desktop maintains its own `orderedWindowIds` and `activeWindowId`
+  - `createDesktop(id, config?)` and `switchDesktop(id)` now exist
+  - `setDesktop(payload, desktopId?)` updates the active desktop by default or a specified desktop when requested
+  - old single-desktop persisted state migrates forward into the `default` workspace
+  - `focusWindow(id)` and `restoreWindow(id)` auto-switch to the target window's desktop
+- The fixed feature-complete publish gate remains:
+  - multi-desktop support
+  - multi-monitor support
+  - modal windows
+- When that feature list is complete, tell the user explicitly that the important/core features are done and publishing can move to release validation
 
 ## Relevant Files
 
+- `packages/core/src/types.ts`
+- `packages/core/src/reducer.ts`
+- `packages/core/src/commands.ts`
+- `packages/core/src/createWindowManager.ts`
+- `packages/core/src/selectors.ts`
+- `packages/core/src/serialization.ts`
+- `packages/core/tests/core.test.ts`
 - `packages/react/src/index.tsx`
-- `packages/react/tests/index.test.tsx`
-- `packages/react/tests/subscription.test.tsx`
 - `apps/playground/src/App.tsx`
-- `apps/playground/src/App.test.tsx`
-- `apps/playground/src/main.tsx`
-- `package.json`
+- `README.md`
+- `docs/state-model.md`
+- `docs/examples.md`
 
 ## Constraints
 
-- Keep the added test tooling minimal
-- Prefer testing real interactions over duplicating core reducer assertions in UI tests
-- Keep behavior rules in the core and use adapter/playground tests for integration wiring
+- Keep the new monitor model compatible with the completed multi-desktop workspace isolation
+- Preserve backward compatibility where practical
+- Continue migrating persisted state instead of discarding it if the state shape evolves again
+- Ask the user before choosing an important monitor-model or focus-behavior decision
 
 ## Definition Of Done
 
-- React adapter tests cover live subscription-driven rerenders
-- Playground tests cover at least one real UI creation flow and one real restore/focus flow
-- The chosen test setup fits the current workspace without introducing a heavyweight UI testing stack
-- AI continuity files reflect the result
+- monitor-aware state and commands exist in the core
+- selectors and manager methods understand the active monitor model
+- persistence and migration strategy stay coherent with the new shape
+- the playground exposes a basic monitor-aware flow if the public API changes
+- docs and AI continuity files reflect the new behavior
 
 ## Notes
 
-- Completed in this session:
-  - added `jsdom` as the minimal DOM test environment dependency
-  - extracted the playground UI into `apps/playground/src/App.tsx` so it can be rendered in tests without bootstrapping side effects
-  - added a React adapter subscription test that proves hook consumers rerender from manager updates
-  - added playground interaction tests for toolbar-driven window creation and taskbar-driven restore
-  - fixed a real adapter bug in `packages/react/src/index.tsx` by subscribing `useSyncExternalStore` to the manager state object instead of unstable derived selector outputs
-- Verification completed with:
-  - `.\\node_modules\\.bin\\vitest.cmd run packages\\react\\tests\\subscription.test.tsx apps\\playground\\src\\App.test.tsx --pool vmThreads --maxWorkers 1`
-  - `pnpm.cmd -r test`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
-- Next suggested local task from `ai/tasks.md`:
-  - add advanced selectors or adapter optimizations if render pressure appears
+- Multi-desktop support was completed and verified with direct package typechecks plus targeted core, React, and playground tests

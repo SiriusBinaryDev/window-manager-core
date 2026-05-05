@@ -29,6 +29,8 @@ Crea una instancia imperativa del manager. Expone:
 - `dispatch(command)`: aplica un comando tipado
 - `subscribe(listener)`: escucha cambios de estado
 - `createWindow(payload)`
+- `createDesktop(id, desktop?)`
+- `switchDesktop(id)`
 - `focusWindow(id)`
 - `focusNextWindow()`
 - `focusPreviousWindow()`
@@ -38,7 +40,7 @@ Crea una instancia imperativa del manager. Expone:
 - `minimizeWindow(id)`
 - `restoreWindow(id)`
 - `closeWindow(id)`
-- `setDesktop(payload)`
+- `setDesktop(payload, desktopId?)`
 - `serialize()`: serializa el estado actual
 - `hydrate(serialized)`: hidrata estado serializado y devuelve `WindowManagerState | null`
 - `selectors`: reexport de selectors para leer estado derivado
@@ -53,6 +55,8 @@ Crea una instancia imperativa del manager. Expone:
 Factories de comandos para:
 
 - `createWindow(payload)`
+- `createDesktop(id, desktop?)`
+- `switchDesktop(id)`
 - `focusWindow(id)`
 - `focusNextWindow()`
 - `focusPreviousWindow()`
@@ -62,7 +66,7 @@ Factories de comandos para:
 - `minimizeWindow(id)`
 - `restoreWindow(id)`
 - `closeWindow(id)`
-- `setDesktop(payload)`
+- `setDesktop(payload, desktopId?)`
 - `hydrateState(payload)`
 
 #### `selectors`
@@ -70,6 +74,9 @@ Factories de comandos para:
 Lecturas derivadas disponibles:
 
 - `getWindowById(state, id)`
+- `getDesktopById(state, id)`
+- `getActiveDesktop(state)`
+- `getDesktops(state)`
 - `getActiveWindow(state)`
 - `getVisibleWindows(state)`
 - `getTaskbarItems(state)`
@@ -81,9 +88,10 @@ El comportamiento de foco actual queda definido asi:
 - solo las ventanas visibles pueden recibir foco
 - una ventana visible es una ventana no cerrada y no minimizada
 - `focusWindow(id)` ignora ventanas minimizadas o cerradas
+- `focusWindow(id)` cambia al desktop de la ventana cuando el objetivo vive en otro workspace
 - `focusNextWindow()` y `focusPreviousWindow()` ciclan solo entre ventanas visibles
 - minimizar o cerrar la ventana activa promueve la ventana visible mas alta en z-order
-- `restoreWindow(id)` trae la ventana al frente y la convierte en activa
+- `restoreWindow(id)` trae la ventana al frente, la convierte en activa y cambia al desktop objetivo si hace falta
 
 #### Persistencia
 
@@ -124,7 +132,9 @@ Provider que acepta `manager?: WindowManager`. Si no recibe uno, crea una instan
 
 - `useWindowManager()`: acceso a la instancia `WindowManager`
 - `useWindow(id)`: devuelve `WindowEntity | null`
-- `useDesktop()`: devuelve `WindowManagerState['desktop']`
+- `useDesktop()`: devuelve el `DesktopState` del desktop activo
+- `useDesktops()`: devuelve la lista de workspaces disponibles
+- `useActiveDesktopId()`: devuelve el id del desktop activo
 - `useTaskbar()`: devuelve las ventanas no cerradas
 - `useVisibleWindows()`: devuelve las ventanas no minimizadas ni cerradas
 

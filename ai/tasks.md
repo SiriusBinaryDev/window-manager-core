@@ -1,11 +1,19 @@
 # Backlog
 
+## Publish-Gate Features
+
+- Multi-desktop support
+- Multi-monitor support
+- Modal windows
+
 ## Now
 
-- Add advanced selectors or adapter optimizations if render pressure appears
+- Multi-monitor support
 
 ## Next
 
+- Modal windows
+- Add advanced selectors or adapter optimizations if render pressure appears
 - Improve performance for larger numbers of windows if new measured hotspots appear
 - Validate the release workflow with real CI secrets when publishing is intended
   - local workflow hardening and operator docs are complete
@@ -13,10 +21,7 @@
 
 ## Later
 
-- Multi-desktop support
-- Multi-monitor support
 - Advanced focus policies
-- Modal windows
 - Undo / redo
 - Animations
 - Docking

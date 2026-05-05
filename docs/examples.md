@@ -33,11 +33,20 @@ wm.createWindow({
   flags: { minimizable: false, maximizable: false },
 });
 
+wm.createDesktop('docs');
+wm.createWindow({
+  id: 'notes',
+  desktopId: 'docs',
+  title: 'Notes',
+});
+
 wm.focusWindow('terminal');
 wm.focusNextWindow();
 wm.moveWindow('terminal', 20, 16);
+wm.switchDesktop('docs');
 
-console.log(wm.getState().activeWindowId);
+console.log(wm.getState().activeDesktopId);
+console.log(wm.selectors.getActiveDesktop(wm.getState())?.activeWindowId);
 console.log(wm.selectors.getVisibleWindows(wm.getState()));
 ```
 
@@ -48,6 +57,7 @@ Use this path when:
 - you want to serialize and restore state with `serialize()` / `hydrate()`
 - you want optional desktop-edge snapping during move/resize
 - you want keyboard-style focus traversal without coupling to React
+- you want isolated multi-desktop workspaces with explicit desktop switching
 
 ## 2. Reducer + Commands Integration
 
@@ -98,6 +108,8 @@ Use `WindowManagerProvider` and the exported hooks when React owns the desktop U
 import { createWindowManager } from '@window-manager/core';
 import {
   WindowManagerProvider,
+  useActiveDesktopId,
+  useDesktops,
   useTaskbar,
   useVisibleWindows,
   useWindowManager,
@@ -108,11 +120,15 @@ const STORAGE_KEY = 'window-manager-example';
 
 function Desktop() {
   const wm = useWindowManager();
+  const activeDesktopId = useActiveDesktopId();
+  const desktops = useDesktops();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
 
   return (
     <>
+      <div>Active desktop: {activeDesktopId}</div>
+      <div>{desktops.map((desktop) => desktop.id).join(', ')}</div>
       <button
         onClick={() =>
           wm.createWindow({
@@ -174,12 +190,17 @@ Selectors and React hooks expose slightly different usage styles over the same c
 
 - Core selectors:
   - `getWindowById(state, id)`
+  - `getDesktopById(state, id)`
+  - `getActiveDesktop(state)`
+  - `getDesktops(state)`
   - `getActiveWindow(state)`
   - `getVisibleWindows(state)`
   - `getTaskbarItems(state)`
 - React hooks:
   - `useWindow(id)`
   - `useDesktop()`
+  - `useDesktops()`
+  - `useActiveDesktopId()`
   - `useTaskbar()`
   - `useVisibleWindows()`
 
@@ -187,8 +208,8 @@ Selectors and React hooks expose slightly different usage styles over the same c
 
 These examples intentionally stay within currently implemented features:
 
-- single desktop
+- multiple isolated desktops
 - rectangular desktop bounds
 - desktop-edge snapping only when `desktop.snap.threshold` is configured
 - keyboard navigation currently covers focus traversal only
-- no multi-monitor or multi-desktop support
+- no multi-monitor support yet

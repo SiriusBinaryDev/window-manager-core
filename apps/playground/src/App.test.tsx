@@ -53,6 +53,33 @@ describe('playground interactions', () => {
     expect(activeContainer.textContent).toContain('Window window-1');
   });
 
+  it('creates and switches desktops from the toolbar', () => {
+    const manager = createWindowManager();
+    activeContainer = document.createElement('div');
+    document.body.appendChild(activeContainer);
+    activeRoot = createRoot(activeContainer);
+    vi.stubGlobal('crypto', { randomUUID: () => 'wind-1234' });
+
+    act(() => {
+      activeRoot?.render(<PlaygroundRoot manager={manager} />);
+    });
+
+    const createDesktopButton = activeContainer.querySelector('[aria-label="Create a new desktop"]');
+    expect(createDesktopButton).not.toBeNull();
+
+    click(createDesktopButton as Element);
+
+    expect(manager.getState().desktops['desktop-wind']).toBeDefined();
+    expect(manager.getState().activeDesktopId).toBe('desktop-wind');
+
+    const defaultTab = activeContainer.querySelector('[aria-label="Switch to desktop default"]');
+    expect(defaultTab).not.toBeNull();
+
+    click(defaultTab as Element);
+
+    expect(manager.getState().activeDesktopId).toBe('default');
+  });
+
   it('restores a minimized window from the taskbar', () => {
     const manager = createWindowManager();
     manager.createWindow({ id: 'alpha', title: 'Alpha' });
@@ -71,6 +98,6 @@ describe('playground interactions', () => {
     click(restoreButton as Element);
 
     expect(manager.getState().windows.alpha.state.minimized).toBe(false);
-    expect(manager.getState().activeWindowId).toBe('alpha');
+    expect(manager.getState().desktops.default.activeWindowId).toBe('alpha');
   });
 });

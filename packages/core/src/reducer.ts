@@ -1,14 +1,16 @@
 import { clampRectToBounds, moveRect, resizeRect, snapRectToBounds, snapResizedRectToBounds } from './math';
 import { sanitizeWindowManagerState } from './serialization';
 import type {
+  DesktopId,
   DesktopState,
+  DesktopWorkspace,
   Rect,
   WindowEntity,
   WindowId,
   WindowManagerCommand,
   WindowManagerState,
 } from './types';
-import { WINDOW_MANAGER_STATE_VERSION } from './types';
+import { DEFAULT_DESKTOP_ID, WINDOW_MANAGER_STATE_VERSION } from './types';
 
 const DEFAULT_RECT: Rect = {
   x: 40,
@@ -30,6 +32,19 @@ const DEFAULT_FLAGS = {
   maximizable: true,
 };
 
+function createDesktopWorkspace(id: DesktopId, desktop: DesktopState = DEFAULT_DESKTOP): DesktopWorkspace {
+  return {
+    id,
+    desktop,
+    orderedWindowIds: [],
+    activeWindowId: null,
+  };
+}
+
+function getDesktopWorkspace(state: WindowManagerState, desktopId: DesktopId): DesktopWorkspace | null {
+  return state.desktops[desktopId] ?? null;
+}
+
 function getDesktopRect(desktop: DesktopState): Rect {
   return {
     x: desktop.bounds.minX,
@@ -47,11 +62,16 @@ function isWindowFocusable(windowEntity: WindowEntity | undefined): windowEntity
   return !!windowEntity && !windowEntity.state.closed && !windowEntity.state.minimized;
 }
 
-function findNextActiveId(state: WindowManagerState): WindowId | null {
-  for (let index = state.orderedWindowIds.length - 1; index >= 0; index -= 1) {
-    const id = state.orderedWindowIds[index];
+function findNextActiveId(state: WindowManagerState, desktopId: DesktopId): WindowId | null {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return null;
+  }
+
+  for (let index = workspace.orderedWindowIds.length - 1; index >= 0; index -= 1) {
+    const id = workspace.orderedWindowIds[index];
     const windowEntity = state.windows[id];
-    if (isWindowFocusable(windowEntity)) {
+    if (isWindowFocusable(windowEntity) && windowEntity.desktopId === desktopId) {
       return id;
     }
   }
@@ -89,41 +109,39 @@ function bringToFront(orderedWindowIds: WindowId[], id: WindowId): WindowId[] {
   return [...rest, id];
 }
 
-function getVisibleWindowIds(state: WindowManagerState): WindowId[] {
-  return state.orderedWindowIds.filter((id) => {
+function getVisibleWindowIds(state: WindowManagerState, desktopId: DesktopId): WindowId[] {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return [];
+  }
+
+  return workspace.orderedWindowIds.filter((id) => {
     const windowEntity = state.windows[id];
-    return isWindowFocusable(windowEntity);
+    return isWindowFocusable(windowEntity) && windowEntity.desktopId === desktopId;
   });
 }
 
-function rotateVisibleWindowOrder(
+function patchWorkspace(
   state: WindowManagerState,
-  direction: 'next' | 'previous',
-): WindowManagerState | null {
-  const visibleWindowIds = getVisibleWindowIds(state);
-  if (visibleWindowIds.length <= 1) {
-    return null;
+  desktopId: DesktopId,
+  updater: (workspace: DesktopWorkspace) => DesktopWorkspace,
+): WindowManagerState {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return state;
   }
 
-  const rotatedVisibleIds =
-    direction === 'next'
-      ? [...visibleWindowIds.slice(1), visibleWindowIds[0]]
-      : [visibleWindowIds[visibleWindowIds.length - 1], ...visibleWindowIds.slice(0, -1)];
-  const visibleIdSet = new Set(visibleWindowIds);
-  let visibleIndex = 0;
+  const nextWorkspace = updater(workspace);
+  if (nextWorkspace === workspace) {
+    return state;
+  }
 
   return {
     ...state,
-    orderedWindowIds: state.orderedWindowIds.map((id) => {
-      if (!visibleIdSet.has(id)) {
-        return id;
-      }
-
-      const nextId = rotatedVisibleIds[visibleIndex];
-      visibleIndex += 1;
-      return nextId;
-    }),
-    activeWindowId: rotatedVisibleIds[rotatedVisibleIds.length - 1] ?? null,
+    desktops: {
+      ...state.desktops,
+      [desktopId]: nextWorkspace,
+    },
   };
 }
 
@@ -151,13 +169,82 @@ function patchWindow(
   };
 }
 
+function rotateVisibleWindowOrder(
+  state: WindowManagerState,
+  desktopId: DesktopId,
+  direction: 'next' | 'previous',
+): WindowManagerState | null {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return null;
+  }
+
+  const visibleWindowIds = getVisibleWindowIds(state, desktopId);
+  if (visibleWindowIds.length <= 1) {
+    return null;
+  }
+
+  const rotatedVisibleIds =
+    direction === 'next'
+      ? [...visibleWindowIds.slice(1), visibleWindowIds[0]]
+      : [visibleWindowIds[visibleWindowIds.length - 1], ...visibleWindowIds.slice(0, -1)];
+  const visibleIdSet = new Set(visibleWindowIds);
+  let visibleIndex = 0;
+
+  return patchWorkspace(state, desktopId, (current) => ({
+    ...current,
+    orderedWindowIds: current.orderedWindowIds.map((id) => {
+      if (!visibleIdSet.has(id)) {
+        return id;
+      }
+
+      const nextId = rotatedVisibleIds[visibleIndex];
+      visibleIndex += 1;
+      return nextId;
+    }),
+    activeWindowId: rotatedVisibleIds[rotatedVisibleIds.length - 1] ?? null,
+  }));
+}
+
+function updateWindowWorkspaceFocus(
+  state: WindowManagerState,
+  desktopId: DesktopId,
+  windowId: WindowId,
+  switchDesktop: boolean,
+): WindowManagerState {
+  const workspace = getDesktopWorkspace(state, desktopId);
+  if (!workspace) {
+    return state;
+  }
+
+  const orderedWindowIds = bringToFront(workspace.orderedWindowIds, windowId);
+  const nextState =
+    orderedWindowIds === workspace.orderedWindowIds && workspace.activeWindowId === windowId
+      ? state
+      : patchWorkspace(state, desktopId, (current) => ({
+          ...current,
+          orderedWindowIds,
+          activeWindowId: windowId,
+        }));
+
+  if (!switchDesktop || nextState.activeDesktopId === desktopId) {
+    return nextState;
+  }
+
+  return {
+    ...nextState,
+    activeDesktopId: desktopId,
+  };
+}
+
 export function createInitialState(): WindowManagerState {
   return {
     version: WINDOW_MANAGER_STATE_VERSION,
     windows: {},
-    orderedWindowIds: [],
-    activeWindowId: null,
-    desktop: DEFAULT_DESKTOP,
+    desktops: {
+      [DEFAULT_DESKTOP_ID]: createDesktopWorkspace(DEFAULT_DESKTOP_ID),
+    },
+    activeDesktopId: DEFAULT_DESKTOP_ID,
   };
 }
 
@@ -171,13 +258,20 @@ export function windowManagerReducer(
         return state;
       }
 
+      const desktopId = command.payload.desktopId ?? state.activeDesktopId;
+      const workspace = getDesktopWorkspace(state, desktopId);
+      if (!workspace) {
+        return state;
+      }
+
       const baseRect = {
         ...DEFAULT_RECT,
         ...command.payload.rect,
       };
-      const safeRect = clampRectToBounds(baseRect, state.desktop.bounds);
+      const safeRect = clampRectToBounds(baseRect, workspace.desktop.bounds);
       const windowEntity: WindowEntity = {
         id: command.payload.id,
+        desktopId,
         state: {
           minimized: false,
           maximized: false,
@@ -192,20 +286,52 @@ export function windowManagerReducer(
         ...(command.payload.title !== undefined ? { title: command.payload.title } : {}),
       };
 
-      const nextState = {
+      const nextState: WindowManagerState = {
         ...state,
         windows: { ...state.windows, [windowEntity.id]: windowEntity },
-        orderedWindowIds: [...state.orderedWindowIds, windowEntity.id],
+        desktops: {
+          ...state.desktops,
+          [desktopId]: {
+            ...workspace,
+            orderedWindowIds: [...workspace.orderedWindowIds, windowEntity.id],
+            activeWindowId: (command.payload.focus ?? true) ? windowEntity.id : workspace.activeWindowId,
+          },
+        },
       };
 
-      if (command.payload.focus ?? true) {
-        return {
-          ...nextState,
-          activeWindowId: windowEntity.id,
-        };
+      if (!(command.payload.focus ?? true) || state.activeDesktopId === desktopId) {
+        return nextState;
       }
 
-      return nextState;
+      return {
+        ...nextState,
+        activeDesktopId: desktopId,
+      };
+    }
+
+    case 'CREATE_DESKTOP': {
+      if (state.desktops[command.payload.id]) {
+        return state;
+      }
+
+      return {
+        ...state,
+        desktops: {
+          ...state.desktops,
+          [command.payload.id]: createDesktopWorkspace(command.payload.id, command.payload.desktop),
+        },
+      };
+    }
+
+    case 'SWITCH_DESKTOP': {
+      if (!state.desktops[command.payload.id] || state.activeDesktopId === command.payload.id) {
+        return state;
+      }
+
+      return {
+        ...state,
+        activeDesktopId: command.payload.id,
+      };
     }
 
     case 'FOCUS_WINDOW': {
@@ -214,22 +340,14 @@ export function windowManagerReducer(
         return state;
       }
 
-      const orderedWindowIds = bringToFront(state.orderedWindowIds, command.payload.id);
-      if (orderedWindowIds === state.orderedWindowIds && state.activeWindowId === command.payload.id) {
-        return state;
-      }
-
-      return {
-        ...state,
-        orderedWindowIds,
-        activeWindowId: command.payload.id,
-      };
+      return updateWindowWorkspaceFocus(state, windowEntity.desktopId, command.payload.id, true);
     }
 
     case 'FOCUS_NEXT_WINDOW':
     case 'FOCUS_PREVIOUS_WINDOW': {
       const rotatedState = rotateVisibleWindowOrder(
         state,
+        state.activeDesktopId,
         command.type === 'FOCUS_NEXT_WINDOW' ? 'next' : 'previous',
       );
       if (!rotatedState) {
@@ -245,14 +363,19 @@ export function windowManagerReducer(
         return state;
       }
 
+      const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
+      if (!workspace) {
+        return state;
+      }
+
       return patchWindow(state, command.payload.id, (current) => {
         if (command.payload.deltaX === 0 && command.payload.deltaY === 0) {
           return current;
         }
 
         const moved = moveRect(current.rect, command.payload.deltaX, command.payload.deltaY);
-        const snapped = snapRectToBounds(moved, state.desktop.bounds, getSnapThreshold(state.desktop));
-        const clamped = clampRectToBounds(snapped, state.desktop.bounds);
+        const snapped = snapRectToBounds(moved, workspace.desktop.bounds, getSnapThreshold(workspace.desktop));
+        const clamped = clampRectToBounds(snapped, workspace.desktop.bounds);
         if (rectEquals(clamped, current.rect)) {
           return current;
         }
@@ -271,6 +394,11 @@ export function windowManagerReducer(
         return state;
       }
 
+      const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
+      if (!workspace) {
+        return state;
+      }
+
       return patchWindow(state, command.payload.id, (current) => {
         if (command.payload.deltaX === 0 && command.payload.deltaY === 0) {
           return current;
@@ -284,11 +412,11 @@ export function windowManagerReducer(
         );
         const snapped = snapResizedRectToBounds(
           resized,
-          state.desktop.bounds,
+          workspace.desktop.bounds,
           command.payload.edge,
-          getSnapThreshold(state.desktop),
+          getSnapThreshold(workspace.desktop),
         );
-        const clamped = clampRectToBounds(snapped, state.desktop.bounds);
+        const clamped = clampRectToBounds(snapped, workspace.desktop.bounds);
         if (rectEquals(clamped, current.rect)) {
           return current;
         }
@@ -312,21 +440,31 @@ export function windowManagerReducer(
         return state;
       }
 
-      const orderedWindowIds = bringToFront(state.orderedWindowIds, command.payload.id);
+      const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
+      if (!workspace) {
+        return state;
+      }
 
-      return {
-        ...patchWindow(state, command.payload.id, (current) => ({
-          ...current,
-          state: { ...current.state, minimized: false, maximized: true },
-          restoreRect: current.rect,
-          rect: getDesktopRect(state.desktop),
-        })),
+      const nextState = patchWindow(state, command.payload.id, (current) => ({
+        ...current,
+        state: { ...current.state, minimized: false, maximized: true },
+        restoreRect: current.rect,
+        rect: getDesktopRect(workspace.desktop),
+      }));
+
+      return patchWorkspace(nextState, windowEntity.desktopId, (current) => ({
+        ...current,
+        orderedWindowIds: bringToFront(current.orderedWindowIds, command.payload.id),
         activeWindowId: command.payload.id,
-        orderedWindowIds,
-      };
+      }));
     }
 
     case 'MINIMIZE_WINDOW': {
+      const windowEntity = state.windows[command.payload.id];
+      if (!windowEntity) {
+        return state;
+      }
+
       const minimized = patchWindow(state, command.payload.id, (current) => {
         if (!current.flags.minimizable) {
           return current;
@@ -346,11 +484,13 @@ export function windowManagerReducer(
         return state;
       }
 
-      return {
-        ...minimized,
+      return patchWorkspace(minimized, windowEntity.desktopId, (current) => ({
+        ...current,
         activeWindowId:
-          state.activeWindowId === command.payload.id ? findNextActiveId(minimized) : state.activeWindowId,
-      };
+          current.activeWindowId === command.payload.id
+            ? findNextActiveId(minimized, windowEntity.desktopId)
+            : current.activeWindowId,
+      }));
     }
 
     case 'RESTORE_WINDOW': {
@@ -359,8 +499,13 @@ export function windowManagerReducer(
         return state;
       }
 
+      const workspace = getDesktopWorkspace(state, windowEntity.desktopId);
+      if (!workspace) {
+        return state;
+      }
+
       const restoredState = patchWindow(state, command.payload.id, (current) => {
-        const nextRect = clampRectToBounds(current.restoreRect, state.desktop.bounds);
+        const nextRect = clampRectToBounds(current.restoreRect, workspace.desktop.bounds);
         const hasStateChange = current.state.minimized || current.state.maximized;
         const hasRectChange = !rectEquals(nextRect, current.rect);
 
@@ -374,13 +519,8 @@ export function windowManagerReducer(
           rect: nextRect,
         };
       });
-      const orderedWindowIds = bringToFront(restoredState.orderedWindowIds, command.payload.id);
 
-      return {
-        ...restoredState,
-        orderedWindowIds,
-        activeWindowId: command.payload.id,
-      };
+      return updateWindowWorkspaceFocus(restoredState, windowEntity.desktopId, command.payload.id, true);
     }
 
     case 'CLOSE_WINDOW': {
@@ -399,18 +539,26 @@ export function windowManagerReducer(
         },
       }));
 
-      return {
-        ...closedState,
+      return patchWorkspace(closedState, windowEntity.desktopId, (current) => ({
+        ...current,
         activeWindowId:
-          state.activeWindowId === command.payload.id ? findNextActiveId(closedState) : state.activeWindowId,
-      };
+          current.activeWindowId === command.payload.id
+            ? findNextActiveId(closedState, windowEntity.desktopId)
+            : current.activeWindowId,
+      }));
     }
 
     case 'SET_DESKTOP': {
-      const nextDesktop = command.payload;
+      const desktopId = command.payload.desktopId ?? state.activeDesktopId;
+      const workspace = getDesktopWorkspace(state, desktopId);
+      if (!workspace) {
+        return state;
+      }
+
+      const nextDesktop = command.payload.desktop;
       let nextWindows: WindowManagerState['windows'] | null = null;
 
-      for (const windowId of state.orderedWindowIds) {
+      for (const windowId of workspace.orderedWindowIds) {
         const current = state.windows[windowId];
         if (!current || current.state.closed) {
           continue;
@@ -431,14 +579,20 @@ export function windowManagerReducer(
         };
       }
 
-      if (!nextWindows && desktopEquals(state.desktop, nextDesktop)) {
+      if (!nextWindows && desktopEquals(workspace.desktop, nextDesktop)) {
         return state;
       }
 
       return {
         ...state,
-        desktop: nextDesktop,
         windows: nextWindows ?? state.windows,
+        desktops: {
+          ...state.desktops,
+          [desktopId]: {
+            ...workspace,
+            desktop: nextDesktop,
+          },
+        },
       };
     }
 

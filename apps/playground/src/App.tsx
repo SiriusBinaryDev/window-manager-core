@@ -1,10 +1,19 @@
-import { WindowManagerProvider, useTaskbar, useVisibleWindows, useWindowManager } from '@window-manager/react';
+import {
+  WindowManagerProvider,
+  useActiveDesktopId,
+  useDesktops,
+  useTaskbar,
+  useVisibleWindows,
+  useWindowManager,
+} from '@window-manager/react';
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 
 import type { WindowManager } from '@window-manager/core';
 
 export function PlaygroundApp(): React.JSX.Element {
   const manager = useWindowManager();
+  const activeDesktopId = useActiveDesktopId();
+  const desktops = useDesktops();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
 
@@ -31,6 +40,16 @@ export function PlaygroundApp(): React.JSX.Element {
     <main className="desktop" role="application" aria-label="Window manager playground" aria-describedby="desktop-help">
       <div className="toolbar" role="toolbar" aria-label="Desktop controls">
         <button
+          aria-label="Create a new desktop"
+          onClick={() => {
+            const id = `desktop-${crypto.randomUUID().slice(0, 4)}`;
+            manager.createDesktop(id);
+            manager.switchDesktop(id);
+          }}
+        >
+          New desktop
+        </button>
+        <button
           aria-label="Create a new window"
           onClick={() => {
             const id = crypto.randomUUID().slice(0, 8);
@@ -46,6 +65,19 @@ export function PlaygroundApp(): React.JSX.Element {
           Next window
         </button>
         <span aria-hidden="true">Alt+Shift+Left / Alt+Shift+Right</span>
+      </div>
+      <div className="toolbar" role="tablist" aria-label="Desktops">
+        {desktops.map((desktop) => (
+          <button
+            key={desktop.id}
+            role="tab"
+            aria-selected={desktop.id === activeDesktopId}
+            aria-label={`Switch to desktop ${desktop.id}`}
+            onClick={() => manager.switchDesktop(desktop.id)}
+          >
+            {desktop.id}
+          </button>
+        ))}
       </div>
       <p id="desktop-help" className="sr-only">
         Use Alt+Shift+Left or Alt+Shift+Right to move keyboard focus between visible windows.
