@@ -57,7 +57,7 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
-.desktop-shell {
+.workspace-shell {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
   height: 100%;
@@ -377,7 +377,7 @@ h2 {
 }
 
 @media (max-width: 860px) {
-  .desktop-shell {
+  .workspace-shell {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
   }

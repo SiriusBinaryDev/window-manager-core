@@ -2,7 +2,7 @@
 
 Headless TypeScript packages for building desktop-style window interfaces in web apps.
 
-The core package has no DOM or React dependency. It stores window state, applies focus and z-order rules, keeps windows inside monitor bounds, supports desktops, monitors, modals, snapping, taskbar selectors, and versioned persistence. The React package is a thin provider and hook layer over the core manager.
+The core package has no DOM or React dependency. It stores window state, applies focus and z-order rules, keeps windows inside monitor bounds, supports workspaces, monitors, modals, snapping, taskbar selectors, and versioned persistence. The React package is a thin provider and hook layer over the core manager.
 
 ## Packages
 
@@ -41,15 +41,13 @@ wm.moveWindow('terminal', 20, 10);
 wm.resizeWindow('terminal', 'bottom-right', 80, 40);
 wm.maximizeWindow('terminal');
 wm.restoreWindow('terminal');
-
-console.log(wm.getState().windows.terminal.rect);
 ```
 
-## Desktops And Monitors
+## Workspaces And Monitors
 
 ```ts
-wm.createDesktop('work');
-wm.switchDesktop('work');
+wm.createWorkspace('work');
+wm.switchWorkspace('work');
 
 wm.createMonitor('right', {
   size: { width: 1280, height: 720 },
@@ -61,7 +59,7 @@ wm.switchMonitor('right');
 wm.createWindow({ id: 'notes', title: 'Notes' });
 ```
 
-Each desktop owns its monitor layout, active monitor, z-order, and active window. This keeps workspaces isolated and makes it easy to persist or switch a whole desktop as one unit. A more OS-like model could put desktops inside monitors, but that is a different state shape and would be a breaking architecture change.
+A workspace owns its monitor layout, active monitor, z-order, and active window. The older `createDesktop`, `switchDesktop`, and desktop selector names still work as compatibility aliases.
 
 ## Modals
 
@@ -75,7 +73,7 @@ wm.createWindow({
 });
 ```
 
-A modal inherits the desktop and monitor of its owner. While a visible modal exists, the core prevents background windows in that desktop from taking focus. Closing an owner also closes its modal descendants.
+A modal inherits the workspace and monitor of its owner. While a visible modal exists, the core prevents background windows in that workspace from taking focus. Closing an owner also closes its modal descendants.
 
 ## Persistence
 
@@ -101,7 +99,7 @@ import {
 
 const manager = createWindowManager();
 
-function Desktop() {
+function WorkspaceView() {
   const wm = useWindowManager();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
@@ -120,7 +118,7 @@ function Desktop() {
 export function App() {
   return (
     <WindowManagerProvider manager={manager}>
-      <Desktop />
+      <WorkspaceView />
     </WindowManagerProvider>
   );
 }
@@ -134,10 +132,12 @@ export function App() {
 - `dispatch(command)`
 - `subscribe(listener)`
 - `createWindow(payload)`
+- `createWorkspace(id, workspace?)`
+- `switchWorkspace(id)`
 - `createDesktop(id, desktop?)`
 - `switchDesktop(id)`
-- `createMonitor(id, monitor?, desktopId?)`
-- `switchMonitor(id, desktopId?)`
+- `createMonitor(id, monitor?, workspaceId?)`
+- `switchMonitor(id, workspaceId?)`
 - `focusWindow(id)`
 - `focusNextWindow()`
 - `focusPreviousWindow()`
@@ -147,13 +147,13 @@ export function App() {
 - `minimizeWindow(id)`
 - `restoreWindow(id)`
 - `closeWindow(id)`
-- `setMonitor(payload, desktopId?, monitorId?)`
-- `setDesktop(payload, desktopId?, monitorId?)`
+- `setMonitor(payload, workspaceId?, monitorId?)`
+- `setDesktop(payload, workspaceId?, monitorId?)`
 - `serialize()`
 - `hydrate(serialized)`
 - `selectors`
 
-`setDesktop(...)` is kept as a compatibility alias for `setMonitor(...)`.
+The desktop-named methods are compatibility aliases. The state fields are still named `desktops`, `desktopId`, and `activeDesktopId` for serialized-state compatibility.
 
 ## Resize Edges
 
@@ -171,29 +171,44 @@ type ResizeEdge =
 
 ## Selectors
 
-- `getWindowById(state, id)`
+Preferred workspace names:
+
+- `getWorkspaceById(state, id)`
+- `getActiveWorkspace(state)`
+- `getWorkspaces(state)`
+- `getMonitorById(state, id, workspaceId?)`
+- `getActiveMonitor(state, workspaceId?)`
+- `getActiveWindow(state, workspaceId?)`
+- `getTopModalWindow(state, workspaceId?)`
+- `getVisibleWindows(state, workspaceId?, monitorId?)`
+- `getTaskbarItems(state, workspaceId?, monitorId?)`
+
+Compatibility desktop names:
+
 - `getDesktopById(state, id)`
 - `getActiveDesktop(state)`
 - `getDesktops(state)`
-- `getMonitorById(state, id, desktopId?)`
-- `getActiveMonitor(state, desktopId?)`
-- `getActiveWindow(state, desktopId?)`
-- `getTopModalWindow(state, desktopId?)`
-- `getVisibleWindows(state, desktopId?, monitorId?)`
-- `getTaskbarItems(state, desktopId?, monitorId?)`
 
 ## React Hooks
 
+Preferred workspace names:
+
 - `useWindowManager()`
 - `useWindow(id)`
-- `useTopModalWindow()`
+- `useWorkspace()`
+- `useWorkspaces()`
+- `useActiveWorkspaceId()`
 - `useMonitor()`
+- `useActiveMonitorId()`
+- `useTopModalWindow()`
+- `useTaskbar()`
+- `useVisibleWindows()`
+
+Compatibility desktop names:
+
 - `useDesktop()`
 - `useDesktops()`
 - `useActiveDesktopId()`
-- `useActiveMonitorId()`
-- `useTaskbar()`
-- `useVisibleWindows()`
 
 ## Local Development
 
@@ -206,4 +221,4 @@ pnpm build
 pnpm --filter @window-manager/playground dev
 ```
 
-The playground demonstrates window creation, fixed capability flags, drag, edge and corner resize, minimize, maximize, restore, close, focus traversal, desktops, monitors, monitor snapping, monitor resizing, modals, taskbar behavior, selectors, and `localStorage` persistence.
+The playground demonstrates window creation, fixed capability flags, drag, edge and corner resize, minimize, maximize, restore, close, focus traversal, workspaces, monitors, monitor snapping, monitor resizing, modals, taskbar behavior, selectors, and `localStorage` persistence.

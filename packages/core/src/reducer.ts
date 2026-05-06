@@ -476,6 +476,7 @@ export function windowManagerReducer(
 
       const desktopId =
         ownerWindow?.desktopId ??
+        command.payload.workspaceId ??
         command.payload.desktopId ??
         state.activeDesktopId;
       const workspace = getDesktopWorkspace(state, desktopId);

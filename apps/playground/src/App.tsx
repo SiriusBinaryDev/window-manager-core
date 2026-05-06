@@ -3,8 +3,8 @@ import {
   useMonitor,
   useTopModalWindow,
   WindowManagerProvider,
-  useActiveDesktopId,
-  useDesktops,
+  useActiveWorkspaceId,
+  useWorkspaces,
   useTaskbar,
   useVisibleWindows,
   useWindowManager,
@@ -57,20 +57,22 @@ function removeMonitorSnap(monitor: MonitorState): MonitorState {
 
 export function PlaygroundApp(): React.JSX.Element {
   const manager = useWindowManager();
-  const activeDesktopId = useActiveDesktopId();
+  const activeWorkspaceId = useActiveWorkspaceId();
   const activeMonitorId = useActiveMonitorId();
   const activeMonitor = useMonitor();
-  const desktops = useDesktops();
+  const workspaces = useWorkspaces();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
   const topModalWindow = useTopModalWindow();
   const state = manager.getState();
-  const activeDesktop =
-    desktops.find((desktop) => desktop.id === activeDesktopId) ??
-    desktops[0] ??
+  const activeWorkspace =
+    workspaces.find((workspace) => workspace.id === activeWorkspaceId) ??
+    workspaces[0] ??
     null;
   const activeWindow = manager.selectors.getActiveWindow(manager.getState());
-  const monitors = activeDesktop ? Object.entries(activeDesktop.monitors) : [];
+  const monitors = activeWorkspace
+    ? Object.entries(activeWorkspace.monitors)
+    : [];
   const topModalIndex = topModalWindow
     ? windows.findIndex((windowEntity) => windowEntity.id === topModalWindow.id)
     : -1;
@@ -98,10 +100,10 @@ export function PlaygroundApp(): React.JSX.Element {
 
   return (
     <main
-      className="desktop-shell"
+      className="workspace-shell"
       role="application"
       aria-label="Window manager playground"
-      aria-describedby="desktop-help"
+      aria-describedby="workspace-help"
     >
       <aside className="control-panel">
         <header className="panel-header">
@@ -165,14 +167,14 @@ export function PlaygroundApp(): React.JSX.Element {
               Modal
             </button>
             <button
-              aria-label="Create a new desktop"
+              aria-label="Create a new workspace"
               onClick={() => {
-                const id = `desktop-${crypto.randomUUID().slice(0, 4)}`;
-                manager.createDesktop(id);
-                manager.switchDesktop(id);
+                const id = `workspace-${crypto.randomUUID().slice(0, 4)}`;
+                manager.createWorkspace(id);
+                manager.switchWorkspace(id);
               }}
             >
-              Desktop
+              Workspace
             </button>
             <button
               aria-label="Create a new monitor"
@@ -184,9 +186,9 @@ export function PlaygroundApp(): React.JSX.Element {
                     size: { width: 1280, height: 720 },
                     bounds: { minX: 1320, minY: 0, maxX: 2600, maxY: 720 },
                   },
-                  activeDesktopId,
+                  activeWorkspaceId,
                 );
-                manager.switchMonitor(id, activeDesktopId);
+                manager.switchMonitor(id, activeWorkspaceId);
               }}
             >
               Monitor
@@ -194,18 +196,18 @@ export function PlaygroundApp(): React.JSX.Element {
           </div>
         </section>
 
-        <section className="panel-section" aria-labelledby="desktop-heading">
-          <h2 id="desktop-heading">Desktops</h2>
-          <div className="tab-strip" role="tablist" aria-label="Desktops">
-            {desktops.map((desktop) => (
+        <section className="panel-section" aria-labelledby="workspace-heading">
+          <h2 id="workspace-heading">Workspaces</h2>
+          <div className="tab-strip" role="tablist" aria-label="Workspaces">
+            {workspaces.map((workspace) => (
               <button
-                key={desktop.id}
+                key={workspace.id}
                 role="tab"
-                aria-selected={desktop.id === activeDesktopId}
-                aria-label={`Switch to desktop ${desktop.id}`}
-                onClick={() => manager.switchDesktop(desktop.id)}
+                aria-selected={workspace.id === activeWorkspaceId}
+                aria-label={`Switch to workspace ${workspace.id}`}
+                onClick={() => manager.switchWorkspace(workspace.id)}
               >
-                {desktop.id}
+                {workspace.id}
               </button>
             ))}
           </div>
@@ -221,7 +223,7 @@ export function PlaygroundApp(): React.JSX.Element {
                 aria-selected={monitorId === activeMonitorId}
                 aria-label={`Switch to monitor ${monitorId}`}
                 onClick={() =>
-                  manager.switchMonitor(monitorId, activeDesktopId)
+                  manager.switchMonitor(monitorId, activeWorkspaceId)
                 }
               >
                 {monitorId}
@@ -240,7 +242,7 @@ export function PlaygroundApp(): React.JSX.Element {
                   snapEnabled
                     ? removeMonitorSnap(activeMonitor)
                     : { ...activeMonitor, snap: { threshold: 24 } },
-                  activeDesktopId,
+                  activeWorkspaceId,
                   activeMonitorId,
                 );
               }}
@@ -252,7 +254,7 @@ export function PlaygroundApp(): React.JSX.Element {
               onClick={() =>
                 manager.setMonitor(
                   resizeMonitorBounds(activeMonitor, 900, 560),
-                  activeDesktopId,
+                  activeWorkspaceId,
                   activeMonitorId,
                 )
               }
@@ -264,7 +266,7 @@ export function PlaygroundApp(): React.JSX.Element {
               onClick={() =>
                 manager.setMonitor(
                   resizeMonitorBounds(activeMonitor, 1280, 720),
-                  activeDesktopId,
+                  activeWorkspaceId,
                   activeMonitorId,
                 )
               }
@@ -295,8 +297,8 @@ export function PlaygroundApp(): React.JSX.Element {
         <section className="panel-section metrics" aria-label="Active state">
           <dl>
             <div>
-              <dt>Desktop</dt>
-              <dd>{activeDesktopId}</dd>
+              <dt>Workspace</dt>
+              <dd>{activeWorkspaceId}</dd>
             </div>
             <div>
               <dt>Monitor</dt>
@@ -323,7 +325,7 @@ export function PlaygroundApp(): React.JSX.Element {
       </aside>
 
       <section className="workspace">
-        <p id="desktop-help" className="sr-only">
+        <p id="workspace-help" className="sr-only">
           Use Alt+Shift+Left or Alt+Shift+Right to move keyboard focus between
           visible windows.
         </p>

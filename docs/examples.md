@@ -34,7 +34,7 @@ wm.createWindow({
   flags: { minimizable: false, maximizable: false },
 });
 
-wm.createDesktop('docs');
+wm.createWorkspace('docs');
 wm.createMonitor(
   'vertical',
   {
@@ -45,7 +45,7 @@ wm.createMonitor(
 );
 wm.createWindow({
   id: 'notes',
-  desktopId: 'docs',
+  workspaceId: 'docs',
   monitorId: 'vertical',
   title: 'Notes',
 });
@@ -59,8 +59,8 @@ wm.createWindow({
 wm.focusNextWindow();
 wm.moveWindow('terminal', 20, 16);
 
-console.log(wm.getState().activeDesktopId);
-console.log(wm.selectors.getActiveDesktop(wm.getState())?.activeMonitorId);
+console.log(wm.selectors.getActiveWorkspace(wm.getState())?.id);
+console.log(wm.selectors.getActiveWorkspace(wm.getState())?.activeMonitorId);
 console.log(wm.selectors.getActiveMonitor(wm.getState()));
 console.log(wm.selectors.getVisibleWindows(wm.getState()));
 ```
@@ -71,7 +71,7 @@ Use this path when:
 - you want direct command methods instead of a reducer integration
 - you want to serialize and restore state with `serialize()` / `hydrate()`
 - you want optional monitor-edge snapping during move and resize
-- you want isolated multi-desktop workspaces with per-desktop monitor layouts
+- you want isolated workspaces with per-workspace monitor layouts
 - you want owner-scoped modal behavior enforced in the core
 
 ## 2. Reducer + Commands Integration
@@ -132,15 +132,15 @@ console.log(topModal?.id);
 
 ## 3. Persisted React Integration
 
-Use `WindowManagerProvider` and the exported hooks when React owns the desktop UI.
+Use `WindowManagerProvider` and the exported hooks when React owns the workspace UI.
 
 ```tsx
 import { createWindowManager } from '@window-manager/core';
 import {
   WindowManagerProvider,
-  useActiveDesktopId,
+  useActiveWorkspaceId,
   useActiveMonitorId,
-  useDesktops,
+  useWorkspaces,
   useTopModalWindow,
   useTaskbar,
   useVisibleWindows,
@@ -150,21 +150,21 @@ import { useMemo } from 'react';
 
 const STORAGE_KEY = 'window-manager-example';
 
-function Desktop() {
+function WorkspaceView() {
   const wm = useWindowManager();
-  const activeDesktopId = useActiveDesktopId();
+  const activeWorkspaceId = useActiveWorkspaceId();
   const activeMonitorId = useActiveMonitorId();
-  const desktops = useDesktops();
+  const workspaces = useWorkspaces();
   const topModal = useTopModalWindow();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
 
   return (
     <>
-      <div>Active desktop: {activeDesktopId}</div>
+      <div>Active workspace: {activeWorkspaceId}</div>
       <div>Active monitor: {activeMonitorId}</div>
       <div>Top modal: {topModal?.id ?? 'none'}</div>
-      <div>{desktops.map((desktop) => desktop.id).join(', ')}</div>
+      <div>{workspaces.map((workspace) => workspace.id).join(', ')}</div>
       <button
         onClick={() =>
           wm.createWindow({
@@ -226,7 +226,7 @@ export function App() {
 
   return (
     <WindowManagerProvider manager={manager}>
-      <Desktop />
+      <WorkspaceView />
     </WindowManagerProvider>
   );
 }
@@ -236,22 +236,22 @@ export function App() {
 
 - Core selectors:
   - `getWindowById(state, id)`
-  - `getDesktopById(state, id)`
-  - `getActiveDesktop(state)`
-  - `getDesktops(state)`
-  - `getMonitorById(state, id, desktopId?)`
-  - `getActiveMonitor(state, desktopId?)`
-  - `getActiveWindow(state, desktopId?)`
-  - `getTopModalWindow(state, desktopId?)`
-  - `getVisibleWindows(state, desktopId?, monitorId?)`
-  - `getTaskbarItems(state, desktopId?, monitorId?)`
+  - `getWorkspaceById(state, id)`
+  - `getActiveWorkspace(state)`
+  - `getWorkspaces(state)`
+  - `getMonitorById(state, id, workspaceId?)`
+  - `getActiveMonitor(state, workspaceId?)`
+  - `getActiveWindow(state, workspaceId?)`
+  - `getTopModalWindow(state, workspaceId?)`
+  - `getVisibleWindows(state, workspaceId?, monitorId?)`
+  - `getTaskbarItems(state, workspaceId?, monitorId?)`
 - React hooks:
   - `useWindow(id)`
   - `useTopModalWindow()`
   - `useMonitor()`
-  - `useDesktop()`
-  - `useDesktops()`
-  - `useActiveDesktopId()`
+  - `useWorkspace()`
+  - `useWorkspaces()`
+  - `useActiveWorkspaceId()`
   - `useActiveMonitorId()`
   - `useTaskbar()`
   - `useVisibleWindows()`
@@ -260,8 +260,8 @@ export function App() {
 
 These examples intentionally stay within currently implemented features:
 
-- multiple isolated desktops
-- multiple monitors per desktop
+- multiple isolated workspaces
+- multiple monitors per workspace
 - owner-scoped modal windows
 - monitor-edge snapping only when `monitor.snap.threshold` is configured
 - keyboard navigation currently covers focus traversal only

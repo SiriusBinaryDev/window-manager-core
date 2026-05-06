@@ -3,7 +3,7 @@
 ## Project
 
 - Name: `window-manager-core`
-- Description: Headless frontend library for desktop-style window management in web apps.
+- Description: Headless frontend library for workspace-based window management in web apps.
 - Repository type: TypeScript monorepo with library packages and a demo app.
 
 ## Tech Stack
@@ -49,7 +49,7 @@
 - `@window-manager/react`
   - Thin adapter around the core manager
   - Uses context + `useSyncExternalStore`
-  - Exposes hooks for manager, active desktop, active monitor, top modal, desktop list, taskbar, visible windows, single window lookup
+  - Exposes hooks for manager, active workspace, active monitor, top modal, workspace list, taskbar, visible windows, single window lookup
 - `apps/playground`
   - Real integration sample
   - Creates a manager instance, hydrates from `localStorage`, subscribes for persistence
@@ -57,13 +57,13 @@
 
 ## Key Domain Concepts
 
-- `WindowManagerState`: versioned root state with `windows`, `desktops`, and `activeDesktopId`
-- `DesktopWorkspace`: isolated workspace with `monitors`, `activeMonitorId`, `orderedWindowIds`, and `activeWindowId`
+- `WindowManagerState`: versioned root state with `windows`, `desktops`, and `activeDesktopId`; the desktop field names are retained for serialized compatibility
+- `Workspace` / `DesktopWorkspace`: isolated workspace with `monitors`, `activeMonitorId`, `orderedWindowIds`, and `activeWindowId`
 - `MonitorState`: monitor size, bounds, and optional snap settings
-- `WindowEntity`: window record with `desktopId`, `monitorId`, optional `ownerWindowId`, `rect`, `restoreRect`, state flags, and capability flags
-- `orderedWindowIds`: explicit z-order model scoped per desktop workspace
-- Taskbar items: derived from windows that are not closed in the active or requested desktop
-- Visible windows: derived from windows that are not closed and not minimized in the active or requested desktop, optionally filtered to a monitor
+- `WindowEntity`: window record with compatibility field `desktopId`, `monitorId`, optional `ownerWindowId`, `rect`, `restoreRect`, state flags, and capability flags
+- `orderedWindowIds`: explicit z-order model scoped per workspace
+- Taskbar items: derived from windows that are not closed in the active or requested workspace
+- Visible windows: derived from windows that are not closed and not minimized in the active or requested workspace, optionally filtered to a monitor
 
 ## Important Dependencies
 
@@ -85,22 +85,23 @@
 ## Constraints / Assumptions
 
 - Core must stay headless: no DOM or React dependencies in `packages/core`
-- Desktop isolation is still the primary ownership model
-- Multi-monitor support is per-desktop, not global at the root state
-- Modal ownership is owner-scoped inside a desktop and monitor
+- Workspace isolation is the primary ownership model
+- Multi-monitor support is per-workspace, not global at the root state
+- Modal ownership is owner-scoped inside a workspace and monitor
 - Snapping is currently limited to opt-in snapping against monitor edges within each workspace
 - Closing a window marks it `closed`; it is not removed from state
 - State version is currently `4`
-- Existing human-facing docs are in Spanish unless a file already uses English
+- Human-facing docs and package READMEs are English and should stay workspace-first
+- Internal serialized state currently keeps desktop field names for compatibility
 
 ## What An AI Must Understand Before Editing
 
 - Business rules belong in `packages/core`; React should stay thin
 - Changing window behavior usually means touching reducer, selectors, serialization, and core tests together
-- `orderedWindowIds` and `activeWindowId` jointly define focus and stacking behavior inside each desktop workspace
-- `activeMonitorId` follows the active window when focus changes across monitors in the same desktop
-- The topmost visible modal in a desktop blocks focus to background windows in that desktop
+- `orderedWindowIds` and `activeWindowId` jointly define focus and stacking behavior inside each workspace
+- `activeMonitorId` follows the active window when focus changes across monitors in the same workspace
+- The topmost visible modal in a workspace blocks focus to background windows in that workspace
 - Persistence format matters because the playground hydrates saved state on startup
-- Cross-desktop `focusWindow()` and `restoreWindow()` intentionally switch the active desktop to make the target visible
+- Cross-workspace `focusWindow()` and `restoreWindow()` intentionally switch the active workspace to make the target visible
 - Completed feature work should be committed in separate, focused commits
 - Important implementation decisions should be surfaced to the user for approval instead of being made implicitly

@@ -3,37 +3,67 @@ import type {
   DesktopWorkspace,
   MonitorId,
   MonitorState,
+  Workspace,
+  WorkspaceId,
   WindowEntity,
   WindowId,
   WindowManagerState,
 } from './types';
 
-function getDesktopWorkspace(state: WindowManagerState, desktopId: DesktopId): DesktopWorkspace | null {
+function getDesktopWorkspace(
+  state: WindowManagerState,
+  desktopId: DesktopId,
+): DesktopWorkspace | null {
   return state.desktops[desktopId] ?? null;
 }
 
-export function getWindowById(state: WindowManagerState, id: WindowId): WindowEntity | null {
+export function getWindowById(
+  state: WindowManagerState,
+  id: WindowId,
+): WindowEntity | null {
   return state.windows[id] ?? null;
 }
 
-export function getDesktopById(state: WindowManagerState, id: DesktopId): DesktopWorkspace | null {
+export function getDesktopById(
+  state: WindowManagerState,
+  id: DesktopId,
+): DesktopWorkspace | null {
   return getDesktopWorkspace(state, id);
 }
 
-export function getActiveDesktop(state: WindowManagerState): DesktopWorkspace | null {
+export function getWorkspaceById(
+  state: WindowManagerState,
+  id: WorkspaceId,
+): Workspace | null {
+  return getDesktopWorkspace(state, id);
+}
+
+export function getActiveDesktop(
+  state: WindowManagerState,
+): DesktopWorkspace | null {
   return getDesktopWorkspace(state, state.activeDesktopId);
+}
+
+export function getActiveWorkspace(
+  state: WindowManagerState,
+): Workspace | null {
+  return getActiveDesktop(state);
 }
 
 export function getDesktops(state: WindowManagerState): DesktopWorkspace[] {
   return Object.values(state.desktops);
 }
 
+export function getWorkspaces(state: WindowManagerState): Workspace[] {
+  return getDesktops(state);
+}
+
 export function getMonitorById(
   state: WindowManagerState,
   id: MonitorId,
-  desktopId: DesktopId = state.activeDesktopId,
+  workspaceId: WorkspaceId = state.activeDesktopId,
 ): MonitorState | null {
-  const workspace = getDesktopWorkspace(state, desktopId);
+  const workspace = getDesktopWorkspace(state, workspaceId);
   if (!workspace) {
     return null;
   }
@@ -43,9 +73,9 @@ export function getMonitorById(
 
 export function getActiveMonitor(
   state: WindowManagerState,
-  desktopId: DesktopId = state.activeDesktopId,
+  workspaceId: WorkspaceId = state.activeDesktopId,
 ): MonitorState | null {
-  const workspace = getDesktopWorkspace(state, desktopId);
+  const workspace = getDesktopWorkspace(state, workspaceId);
   if (!workspace) {
     return null;
   }
@@ -55,9 +85,9 @@ export function getActiveMonitor(
 
 export function getActiveWindow(
   state: WindowManagerState,
-  desktopId: DesktopId = state.activeDesktopId,
+  workspaceId: WorkspaceId = state.activeDesktopId,
 ): WindowEntity | null {
-  const workspace = getDesktopWorkspace(state, desktopId);
+  const workspace = getDesktopWorkspace(state, workspaceId);
   if (!workspace?.activeWindowId) {
     return null;
   }
@@ -67,19 +97,23 @@ export function getActiveWindow(
 
 export function getTopModalWindow(
   state: WindowManagerState,
-  desktopId: DesktopId = state.activeDesktopId,
+  workspaceId: WorkspaceId = state.activeDesktopId,
 ): WindowEntity | null {
-  const workspace = getDesktopWorkspace(state, desktopId);
+  const workspace = getDesktopWorkspace(state, workspaceId);
   if (!workspace) {
     return null;
   }
 
-  for (let index = workspace.orderedWindowIds.length - 1; index >= 0; index -= 1) {
+  for (
+    let index = workspace.orderedWindowIds.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
     const id = workspace.orderedWindowIds[index];
     const windowEntity = state.windows[id];
     if (
       windowEntity &&
-      windowEntity.desktopId === desktopId &&
+      windowEntity.desktopId === workspaceId &&
       !!windowEntity.ownerWindowId &&
       !windowEntity.state.closed &&
       !windowEntity.state.minimized
@@ -93,10 +127,10 @@ export function getTopModalWindow(
 
 export function getVisibleWindows(
   state: WindowManagerState,
-  desktopId: DesktopId = state.activeDesktopId,
+  workspaceId: WorkspaceId = state.activeDesktopId,
   monitorId?: MonitorId,
 ): WindowEntity[] {
-  const workspace = getDesktopWorkspace(state, desktopId);
+  const workspace = getDesktopWorkspace(state, workspaceId);
   if (!workspace) {
     return [];
   }
@@ -106,7 +140,7 @@ export function getVisibleWindows(
     .filter((windowEntity): windowEntity is WindowEntity => {
       return (
         !!windowEntity &&
-        windowEntity.desktopId === desktopId &&
+        windowEntity.desktopId === workspaceId &&
         !windowEntity.state.closed &&
         !windowEntity.state.minimized &&
         (monitorId === undefined || windowEntity.monitorId === monitorId)
@@ -116,10 +150,10 @@ export function getVisibleWindows(
 
 export function getTaskbarItems(
   state: WindowManagerState,
-  desktopId: DesktopId = state.activeDesktopId,
+  workspaceId: WorkspaceId = state.activeDesktopId,
   monitorId?: MonitorId,
 ): WindowEntity[] {
-  const workspace = getDesktopWorkspace(state, desktopId);
+  const workspace = getDesktopWorkspace(state, workspaceId);
   if (!workspace) {
     return [];
   }
@@ -129,7 +163,7 @@ export function getTaskbarItems(
     .filter(
       (windowEntity): windowEntity is WindowEntity =>
         !!windowEntity &&
-        windowEntity.desktopId === desktopId &&
+        windowEntity.desktopId === workspaceId &&
         !windowEntity.state.closed &&
         (monitorId === undefined || windowEntity.monitorId === monitorId),
     );

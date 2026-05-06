@@ -56,6 +56,39 @@ describe('window manager core', () => {
     expect(getWorkspace(state).activeMonitorId).toBe(DEFAULT_MONITOR_ID);
   });
 
+  it('creates and switches workspaces through non-breaking aliases', () => {
+    const manager = createWindowManager();
+
+    manager.createWorkspace('secondary');
+    manager.switchWorkspace('secondary');
+
+    expect(manager.getState().desktops.secondary).toBeDefined();
+    expect(manager.getState().activeDesktopId).toBe('secondary');
+    expect(
+      manager.selectors.getWorkspaceById(manager.getState(), 'secondary')?.id,
+    ).toBe('secondary');
+    expect(manager.selectors.getActiveWorkspace(manager.getState())?.id).toBe(
+      'secondary',
+    );
+    expect(
+      manager.selectors
+        .getWorkspaces(manager.getState())
+        .map((workspace) => workspace.id),
+    ).toContain('secondary');
+  });
+
+  it('creates windows in an explicit workspace through the workspaceId alias', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(state, commands.createWorkspace('secondary'));
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({ id: '1', workspaceId: 'secondary' }),
+    );
+
+    expect(state.windows['1'].desktopId).toBe('secondary');
+    expect(getWorkspace(state, 'secondary').activeWindowId).toBe('1');
+  });
+
   it('creates and switches monitors inside a desktop', () => {
     let state = createInitialState();
     state = windowManagerReducer(

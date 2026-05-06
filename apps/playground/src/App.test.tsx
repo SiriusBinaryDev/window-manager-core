@@ -77,7 +77,7 @@ describe('playground interactions', () => {
     expect(activeContainer.textContent).toContain('Window window-1');
   });
 
-  it('creates and switches desktops from the toolbar', () => {
+  it('creates and switches workspaces from the controls', () => {
     const manager = createWindowManager();
     activeContainer = document.createElement('div');
     document.body.appendChild(activeContainer);
@@ -88,18 +88,18 @@ describe('playground interactions', () => {
       activeRoot?.render(<PlaygroundRoot manager={manager} />);
     });
 
-    const createDesktopButton = activeContainer.querySelector(
-      '[aria-label="Create a new desktop"]',
+    const createWorkspaceButton = activeContainer.querySelector(
+      '[aria-label="Create a new workspace"]',
     );
-    expect(createDesktopButton).not.toBeNull();
+    expect(createWorkspaceButton).not.toBeNull();
 
-    click(createDesktopButton as Element);
+    click(createWorkspaceButton as Element);
 
-    expect(manager.getState().desktops['desktop-wind']).toBeDefined();
-    expect(manager.getState().activeDesktopId).toBe('desktop-wind');
+    expect(manager.getState().desktops['workspace-wind']).toBeDefined();
+    expect(manager.getState().activeDesktopId).toBe('workspace-wind');
 
     const defaultTab = activeContainer.querySelector(
-      '[aria-label="Switch to desktop default"]',
+      '[aria-label="Switch to workspace default"]',
     );
     expect(defaultTab).not.toBeNull();
 

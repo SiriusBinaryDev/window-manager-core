@@ -15,8 +15,8 @@
 
 - `types.ts`: public domain contracts.
 - `commands.ts`: typed command factories.
-- `reducer.ts`: window lifecycle, focus, desktop, monitor, modal, and persistence rules.
-- `selectors.ts`: derived reads such as visible windows, taskbar items, active desktop, and active monitor.
+- `reducer.ts`: window lifecycle, focus, workspace, monitor, modal, and persistence rules.
+- `selectors.ts`: derived reads such as visible windows, taskbar items, active workspace, and active monitor.
 - `math.ts`: movement, resize, snapping, minimum size, and monitor bounds helpers.
 - `serialization.ts`: serialization, hydration, migrations, and state sanitization.
 - `createWindowManager.ts`: imperative API with subscriptions and persistence helpers.
@@ -33,6 +33,27 @@
 - Uses the workspace packages through their public imports.
 - Demonstrates every implemented feature in a browser.
 
+## Naming
+
+The public concept is now **workspace**. A workspace is the virtual environment that owns windows, z-order, active window, monitor layout, and active monitor.
+
+The serialized state and older APIs still use **desktop** names for compatibility:
+
+- `desktops`
+- `activeDesktopId`
+- `window.desktopId`
+- `createDesktop`
+- `switchDesktop`
+- `getDesktops`
+- `useDesktops`
+
+New code should prefer the workspace aliases:
+
+- `createWorkspace`
+- `switchWorkspace`
+- `getWorkspaces`
+- `useWorkspaces`
+
 ## State Ownership
 
 The root state contains:
@@ -41,43 +62,43 @@ The root state contains:
 - `desktops`
 - `activeDesktopId`
 
-Each desktop workspace contains:
+Each workspace contains:
 
 - `monitors`
 - `activeMonitorId`
 - `orderedWindowIds`
 - `activeWindowId`
 
-Each window belongs to exactly one desktop and one monitor.
+Each window belongs to exactly one workspace and one monitor.
 
-## Why Desktops Own Monitors
+## Why Workspaces Own Monitors
 
-The current model treats a desktop as an isolated workspace. That workspace owns its monitor layout, active monitor, window order, and active window. This makes switching desktops simple because one state branch contains everything needed to render that workspace.
+The current model treats a workspace as an isolated environment. That environment owns its monitor layout, active monitor, window order, and active window. This makes switching workspaces simple because one state branch contains everything needed to render that workspace.
 
-An operating-system-style model often treats monitors as global hardware and desktops as workspaces shown on top of those monitors. That model is valid, but it has a different set of tradeoffs:
+An operating-system-style model often treats monitors as global hardware and workspaces as views shown on top of those monitors. That model is valid, but it has different tradeoffs:
 
-- global monitor changes would fan out to every desktop
-- each monitor could need a separate active desktop
-- focus traversal would need to decide whether it is per-monitor, per-desktop, or global
+- global monitor changes would fan out to every workspace
+- each monitor could need a separate active workspace
+- focus traversal would need to decide whether it is per-monitor, per-workspace, or global
 - persistence migrations would be more complex
 
-For this library, desktop-owned monitors keep the core smaller and keep multi-desktop isolation explicit. If global hardware monitors become a required feature, the next step should be a planned state-model migration rather than a small refactor.
+For this library, workspace-owned monitors keep the core smaller and keep workspace isolation explicit. If global hardware monitors become a required feature, the next step should be a planned state-model migration rather than a naming cleanup.
 
 ## Focus And Z-Order
 
-- `orderedWindowIds` is the z-order for one desktop.
+- `orderedWindowIds` is the z-order for one workspace.
 - The last id in `orderedWindowIds` is the topmost window.
 - Only non-closed and non-minimized windows can receive focus.
 - `focusWindow(id)` brings the window to front.
-- Focusing or restoring a window on another desktop switches to that desktop.
+- Focusing or restoring a window in another workspace switches to that workspace.
 - Focusing or restoring a window on another monitor updates `activeMonitorId`.
-- `focusNextWindow()` and `focusPreviousWindow()` cycle visible windows in the active desktop.
+- `focusNextWindow()` and `focusPreviousWindow()` cycle visible windows in the active workspace.
 
 ## Modals
 
 - A modal is a normal window with `ownerWindowId`.
-- The modal inherits the owner's desktop and monitor.
-- Only the topmost visible modal in a desktop can receive focus while it exists.
+- The modal inherits the owner's workspace and monitor.
+- Only the topmost visible modal in a workspace can receive focus while it exists.
 - Closing an owner closes its modal descendants.
 
 ## Geometry

@@ -5,6 +5,8 @@ import {
   type DesktopWorkspace,
   type MonitorId,
   type MonitorState,
+  type Workspace,
+  type WorkspaceId,
   type WindowEntity,
   type WindowId,
   type WindowManager,
@@ -26,7 +28,11 @@ export function WindowManagerProvider({
 }: PropsWithChildren<{ manager?: WindowManager }>): React.JSX.Element {
   const value = useMemo(() => manager ?? createWindowManager(), [manager]);
 
-  return <WindowManagerContext.Provider value={value}>{children}</WindowManagerContext.Provider>;
+  return (
+    <WindowManagerContext.Provider value={value}>
+      {children}
+    </WindowManagerContext.Provider>
+  );
 }
 
 function useManagerContext(): WindowManager {
@@ -68,8 +74,11 @@ export function useMonitor(): MonitorState {
       return activeMonitor;
     }
 
-    const firstDesktop = selectors.getDesktops(state)[0]!;
-    return firstDesktop.monitors[firstDesktop.activeMonitorId] ?? Object.values(firstDesktop.monitors)[0]!;
+    const firstWorkspace = selectors.getWorkspaces(state)[0]!;
+    return (
+      firstWorkspace.monitors[firstWorkspace.activeMonitorId] ??
+      Object.values(firstWorkspace.monitors)[0]!
+    );
   });
 }
 
@@ -77,19 +86,38 @@ export function useDesktop(): MonitorState {
   return useMonitor();
 }
 
+export function useWorkspace(): Workspace {
+  return useStore((state) => {
+    const activeWorkspace = selectors.getActiveWorkspace(state);
+    if (activeWorkspace) {
+      return activeWorkspace;
+    }
+
+    return selectors.getWorkspaces(state)[0]!;
+  });
+}
+
 export function useDesktops(): DesktopWorkspace[] {
   return useStore((state) => selectors.getDesktops(state));
+}
+
+export function useWorkspaces(): Workspace[] {
+  return useStore((state) => selectors.getWorkspaces(state));
 }
 
 export function useActiveDesktopId(): DesktopId {
   return useStore((state) => state.activeDesktopId);
 }
 
+export function useActiveWorkspaceId(): WorkspaceId {
+  return useActiveDesktopId();
+}
+
 export function useActiveMonitorId(): MonitorId {
   return useStore((state) => {
-    const activeDesktop = selectors.getActiveDesktop(state);
-    if (activeDesktop) {
-      return activeDesktop.activeMonitorId;
+    const activeWorkspace = selectors.getActiveWorkspace(state);
+    if (activeWorkspace) {
+      return activeWorkspace.activeMonitorId;
     }
 
     return Object.values(state.desktops)[0]!.activeMonitorId;

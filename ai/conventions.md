@@ -12,6 +12,7 @@
   - `@typescript-eslint/recommended`
   - `prettier`
 - Human-facing docs are now English; keep new public docs and package READMEs in English
+- Public docs and new public API examples should prefer workspace terminology over desktop terminology
 - Publishable packages should each keep a local `README.md`, because npm package pages use the package directory README rather than the monorepo root README
 - Commit every implemented feature as its own separate git commit; do not bundle unrelated completed features together
 - If an implementation requires an important product, API, architecture, persistence, or workflow decision, stop and ask the user before choosing on their behalf
@@ -31,8 +32,9 @@
 - Derived reads belong in selectors
 - Persistence format is versioned and centralized in `packages/core/src/serialization.ts`
 - Geometry behavior is isolated in `packages/core/src/math.ts`
-- Desktop isolation is the primary ownership boundary; monitor layouts live inside each desktop workspace
-- Compatibility aliases may remain in the public API when the state model evolves, for example `setDesktop(...)` and `useDesktop()` now map to the active monitor model
+- Workspace isolation is the primary ownership boundary; monitor layouts live inside each workspace
+- Internal serialized state may still use desktop field names (`desktops`, `desktopId`, `activeDesktopId`) for compatibility
+- Compatibility aliases may remain in the public API when naming evolves, for example desktop-named methods/hooks/selectors can map to workspace behavior
 
 ## Naming Conventions
 

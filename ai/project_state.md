@@ -18,39 +18,47 @@
   - restore
   - close
   - hydrate state
-- Desktop and monitor topology commands exist:
-  - `createDesktop(id, desktop?)`
-  - `switchDesktop(id)`
-  - `createMonitor(id, monitor?, desktopId?)`
-  - `switchMonitor(id, desktopId?)`
-  - `setMonitor(payload, desktopId?, monitorId?)`
-  - `setDesktop(payload, desktopId?, monitorId?)` as a compatibility alias
+- Workspace and monitor topology commands exist:
+  - preferred workspace names:
+    - `createWorkspace(id, workspace?)`
+    - `switchWorkspace(id)`
+    - `createMonitor(id, monitor?, workspaceId?)`
+    - `switchMonitor(id, workspaceId?)`
+    - `setMonitor(payload, workspaceId?, monitorId?)`
+    - `setDesktop(payload, workspaceId?, monitorId?)` as a compatibility monitor setter
+  - compatibility desktop names:
+    - `createDesktop(id, desktop?)`
+    - `switchDesktop(id)`
+    - `createMonitor(id, monitor?, desktopId?)`
+    - `switchMonitor(id, desktopId?)`
+    - `setMonitor(payload, desktopId?, monitorId?)`
+    - `setDesktop(payload, desktopId?, monitorId?)` as a compatibility alias
 - Window capabilities cover:
   - `resizable`
   - `movable`
   - `closable`
   - `minimizable`
   - `maximizable`
-- Desktop-edge snapping is implemented per monitor through `monitor.snap.threshold`
+- Workspace-edge snapping is implemented per monitor through `monitor.snap.threshold`
 - Core reducer hot paths still avoid common no-op updates
 - Keyboard focus traversal is implemented
-- Multi-desktop support is implemented:
-  - each window belongs to exactly one desktop through `window.desktopId`
-  - state stores `desktops` plus `activeDesktopId`
-  - each desktop keeps its own `orderedWindowIds` and `activeWindowId`
-  - `focusWindow(id)` and `restoreWindow(id)` auto-switch desktops when needed
+- Multi-workspace support is implemented:
+  - each window belongs to exactly one workspace through the compatibility field `window.desktopId`
+  - state stores `desktops` plus `activeDesktopId` for serialized compatibility
+  - each workspace keeps its own `orderedWindowIds` and `activeWindowId`
+  - `focusWindow(id)` and `restoreWindow(id)` auto-switch workspaces when needed
 - Multi-monitor support is implemented:
-  - each desktop workspace now owns `monitors` and `activeMonitorId`
+  - each workspace owns `monitors` and `activeMonitorId`
   - each window belongs to exactly one monitor through `window.monitorId`
-  - new windows default to the active monitor in the target desktop
+  - new windows default to the active monitor in the target workspace
   - `focusWindow(id)`, `restoreWindow(id)`, active-window promotion, and traversal move `activeMonitorId` to the focused window's monitor when needed
   - create, move, resize, maximize, restore, and monitor updates now fit windows inside the assigned monitor bounds
-  - version `2` payloads migrate into a default monitor per desktop
-  - version `1` payloads still migrate into the `default` desktop and `default` monitor
+  - version `2` payloads migrate into a default monitor per workspace
+  - version `1` payloads still migrate into the `default` workspace and `default` monitor
 - Modal windows are implemented:
   - modal windows use `ownerWindowId`
-  - a modal inherits the desktop and monitor of its owner
-  - only the topmost visible modal in a desktop can receive focus or participate in traversal
+  - a modal inherits the workspace and monitor of its owner
+  - only the topmost visible modal in a workspace can receive focus or participate in traversal
   - closing an owner window also closes its modal descendants
   - persisted state version is now `4`
   - version `3` payloads migrate into the current modal-aware shape
@@ -58,9 +66,12 @@
 - Imperative `createWindowManager()` facade with subscription and persistence helpers
 - Core selectors for:
   - single window lookup
-  - desktop lookup
-  - active desktop lookup
-  - desktop list lookup
+  - workspace lookup
+  - active workspace lookup
+  - workspace list lookup
+  - desktop compatibility lookup
+  - active desktop compatibility lookup
+  - desktop compatibility list lookup
   - monitor lookup
   - active monitor lookup
   - active window
@@ -72,8 +83,11 @@
   - `useWindow`
   - `useMonitor`
   - `useDesktop` as compatibility alias for the active monitor
-  - `useDesktops`
-  - `useActiveDesktopId`
+  - `useWorkspace`
+  - `useWorkspaces`
+  - `useActiveWorkspaceId`
+  - `useDesktops` as compatibility alias
+  - `useActiveDesktopId` as compatibility alias
   - `useActiveMonitorId`
   - `useTopModalWindow`
   - `useTaskbar`
@@ -82,8 +96,8 @@
   - window creation
   - fixed capability window creation
   - modal window creation from the active window
-  - desktop creation and switching
-  - monitor creation and switching within the active desktop
+  - workspace creation and switching
+  - monitor creation and switching within the active workspace
   - monitor snapping toggle
   - monitor bounds resizing
   - modal backdrop rendering
@@ -93,14 +107,14 @@
   - minimize, maximize/restore toggle, close
   - selector/state readouts
   - localStorage persistence
-- Human-facing docs and package READMEs are in English and reflect the multi-monitor API
-- Architecture docs document the desktop-owned monitor model and the tradeoff versus global monitor ownership
+- Human-facing docs and package READMEs are in English and use workspace-first terminology
+- Architecture docs document the workspace-owned monitor model and explain that desktop-named state fields remain for compatibility
 - Publishable packages include package-level README files for npm package pages
 - Publishable package metadata includes descriptions, keywords, repository, homepage, bugs, public publish config, and `sideEffects: false`
 - Test coverage includes:
   - core lifecycle, focus, snapping, serialization, migration, monitor-aware behavior, and runtime containment for oversized/invalid rects
   - React adapter provider/hook wiring and live subscription rerenders
-  - playground persistence plus desktop and monitor UI interactions
+  - playground persistence plus workspace and monitor UI interactions
 
 ## In Progress
 
@@ -126,11 +140,13 @@
 - The important/core feature set is complete
 - Full repository audit and local publish preparation are complete
 - English documentation and styled playground completion are complete
+- Workspace naming aliases and workspace-first docs are complete
 - Revisit release validation when a license is chosen and repository secrets/npm publish access are available
 
 ## Notes For Next Session
 
 - Start in `packages/core` for any behavior change; update React and playground only after the core API is settled
+- Public docs should use workspace terminology; internal serialized compatibility fields may still use desktop names
 - For release workflow validation, confirm the external prerequisites before running publish-oriented commands
 - Commit each completed feature in its own separate commit
 - Ask the user before making an important implementation decision when more than one reasonable direction exists
@@ -139,11 +155,6 @@
   - `pnpm.cmd typecheck`
   - `pnpm.cmd -r test`
   - `pnpm.cmd build`
-  - `.\\node_modules\\.bin\\vitest.cmd run apps\\playground\\src\\App.test.tsx`
   - `npm.cmd pack --dry-run` in `packages/core`
   - `npm.cmd pack --dry-run` in `packages/react`
   - `pnpm.cmd changeset -- status`
-- Direct package typechecks also passed with:
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`

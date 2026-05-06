@@ -21,7 +21,7 @@ import {
 
 const manager = createWindowManager();
 
-function Desktop() {
+function WorkspaceView() {
   const wm = useWindowManager();
   const windows = useVisibleWindows();
   const taskbar = useTaskbar();
@@ -40,7 +40,7 @@ function Desktop() {
 export function App() {
   return (
     <WindowManagerProvider manager={manager}>
-      <Desktop />
+      <WorkspaceView />
     </WindowManagerProvider>
   );
 }
@@ -52,11 +52,14 @@ export function App() {
 - `useWindow(id)`
 - `useTopModalWindow()`
 - `useMonitor()`
-- `useDesktop()`
-- `useDesktops()`
-- `useActiveDesktopId()`
+- `useWorkspace()`
+- `useWorkspaces()`
+- `useActiveWorkspaceId()`
 - `useActiveMonitorId()`
 - `useTaskbar()`
 - `useVisibleWindows()`
+
+`useDesktop()`, `useDesktops()`, and `useActiveDesktopId()` are still exported
+as compatibility aliases.
 
 See the repository README for complete examples.

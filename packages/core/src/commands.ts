@@ -5,6 +5,8 @@ import type {
   MonitorId,
   MonitorState,
   ResizeEdge,
+  WorkspaceId,
+  WorkspaceState,
   WindowId,
   WindowManagerCommand,
   WindowManagerState,
@@ -15,21 +17,46 @@ export const commands = {
     type: 'CREATE_WINDOW',
     payload,
   }),
-  createDesktop: (id: DesktopId, desktop?: DesktopState): WindowManagerCommand => ({
+  createDesktop: (
+    id: DesktopId,
+    desktop?: DesktopState,
+  ): WindowManagerCommand => ({
     type: 'CREATE_DESKTOP',
     payload: { id, ...(desktop ? { desktop } : {}) },
+  }),
+  createWorkspace: (
+    id: WorkspaceId,
+    workspace?: WorkspaceState,
+  ): WindowManagerCommand => ({
+    type: 'CREATE_DESKTOP',
+    payload: { id, ...(workspace ? { desktop: workspace } : {}) },
   }),
   switchDesktop: (id: DesktopId): WindowManagerCommand => ({
     type: 'SWITCH_DESKTOP',
     payload: { id },
   }),
-  createMonitor: (id: MonitorId, monitor?: MonitorState, desktopId?: DesktopId): WindowManagerCommand => ({
-    type: 'CREATE_MONITOR',
-    payload: { id, ...(monitor ? { monitor } : {}), ...(desktopId ? { desktopId } : {}) },
+  switchWorkspace: (id: WorkspaceId): WindowManagerCommand => ({
+    type: 'SWITCH_DESKTOP',
+    payload: { id },
   }),
-  switchMonitor: (id: MonitorId, desktopId?: DesktopId): WindowManagerCommand => ({
+  createMonitor: (
+    id: MonitorId,
+    monitor?: MonitorState,
+    workspaceId?: WorkspaceId,
+  ): WindowManagerCommand => ({
+    type: 'CREATE_MONITOR',
+    payload: {
+      id,
+      ...(monitor ? { monitor } : {}),
+      ...(workspaceId ? { desktopId: workspaceId } : {}),
+    },
+  }),
+  switchMonitor: (
+    id: MonitorId,
+    workspaceId?: WorkspaceId,
+  ): WindowManagerCommand => ({
     type: 'SWITCH_MONITOR',
-    payload: { id, ...(desktopId ? { desktopId } : {}) },
+    payload: { id, ...(workspaceId ? { desktopId: workspaceId } : {}) },
   }),
   focusWindow: (id: WindowId): WindowManagerCommand => ({
     type: 'FOCUS_WINDOW',
@@ -41,11 +68,20 @@ export const commands = {
   focusPreviousWindow: (): WindowManagerCommand => ({
     type: 'FOCUS_PREVIOUS_WINDOW',
   }),
-  moveWindow: (id: WindowId, deltaX: number, deltaY: number): WindowManagerCommand => ({
+  moveWindow: (
+    id: WindowId,
+    deltaX: number,
+    deltaY: number,
+  ): WindowManagerCommand => ({
     type: 'MOVE_WINDOW',
     payload: { id, deltaX, deltaY },
   }),
-  resizeWindow: (id: WindowId, edge: ResizeEdge, deltaX: number, deltaY: number): WindowManagerCommand => ({
+  resizeWindow: (
+    id: WindowId,
+    edge: ResizeEdge,
+    deltaX: number,
+    deltaY: number,
+  ): WindowManagerCommand => ({
     type: 'RESIZE_WINDOW',
     payload: { id, edge, deltaX, deltaY },
   }),
@@ -65,13 +101,29 @@ export const commands = {
     type: 'CLOSE_WINDOW',
     payload: { id },
   }),
-  setMonitor: (monitor: MonitorState, desktopId?: DesktopId, monitorId?: MonitorId): WindowManagerCommand => ({
+  setMonitor: (
+    monitor: MonitorState,
+    workspaceId?: WorkspaceId,
+    monitorId?: MonitorId,
+  ): WindowManagerCommand => ({
     type: 'SET_MONITOR',
-    payload: { monitor, ...(desktopId ? { desktopId } : {}), ...(monitorId ? { monitorId } : {}) },
+    payload: {
+      monitor,
+      ...(workspaceId ? { desktopId: workspaceId } : {}),
+      ...(monitorId ? { monitorId } : {}),
+    },
   }),
-  setDesktop: (desktop: DesktopState, desktopId?: DesktopId, monitorId?: MonitorId): WindowManagerCommand => ({
+  setDesktop: (
+    desktop: DesktopState,
+    workspaceId?: WorkspaceId,
+    monitorId?: MonitorId,
+  ): WindowManagerCommand => ({
     type: 'SET_DESKTOP',
-    payload: { desktop, ...(desktopId ? { desktopId } : {}), ...(monitorId ? { monitorId } : {}) },
+    payload: {
+      desktop,
+      ...(workspaceId ? { desktopId: workspaceId } : {}),
+      ...(monitorId ? { monitorId } : {}),
+    },
   }),
   hydrateState: (payload: WindowManagerState): WindowManagerCommand => ({
     type: 'HYDRATE_STATE',

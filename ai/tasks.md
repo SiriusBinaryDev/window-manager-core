@@ -2,7 +2,7 @@
 
 ## Publish-Gate Features
 
-- Multi-desktop support
+- Multi-workspace support
 - Multi-monitor support
 - Modal windows
 
@@ -33,7 +33,7 @@
 - Should invalid persisted state be rejected outright or sanitized into a safe state?
 - Should `close` continue to retain closed windows in state long term?
 - Should examples live under a new app or remain part of the playground workflow?
-- Should the project ever migrate from desktop-owned monitors to global monitor ownership with per-monitor desktops?
+- Should a future major release migrate internal serialized `desktop` field names to `workspace` field names?
 - Is `orderedWindowIds` sufficient long term for z-order, or should stacking use a different model if complexity grows?
 - If persistence versioning evolves again, what migration strategy should be used for older saved state?
 - Which modal behaviors belong in the core versus UI adapters as interaction features expand?

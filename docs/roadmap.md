@@ -3,15 +3,16 @@
 ## Complete
 
 - Window lifecycle: create, focus, move, resize, maximize, minimize, restore, and close.
-- Z-order per desktop.
+- Z-order per workspace.
 - Monitor bounds enforcement.
 - Optional monitor-edge snapping.
 - Versioned persistence with sanitized hydration.
-- Multi-desktop workspaces.
-- Multi-monitor layouts per desktop.
+- Multi-workspace support.
+- Multi-monitor layouts per workspace.
 - Owner-scoped modal windows.
 - React provider and hooks.
-- Playground with window creation, fixed capability flags, drag, edge/corner resize, focus traversal, desktops, monitors, monitor snapping, monitor resizing, modals, taskbar, and persistence.
+- Workspace-named public aliases for the older desktop API.
+- Playground with window creation, fixed capability flags, drag, edge/corner resize, focus traversal, workspaces, monitors, monitor snapping, monitor resizing, modals, taskbar, and persistence.
 - Changesets configuration.
 - CI and release workflows.
 
@@ -33,6 +34,7 @@
 
 ## Later
 
+- Global hardware monitor model if consumers need it.
 - Advanced focus policies.
 - Undo and redo.
 - Animations.

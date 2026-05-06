@@ -34,7 +34,7 @@ console.log(wm.getState());
 - window lifecycle
 - focus and z-order
 - move and edge/corner resize
-- desktops and monitors
+- workspaces and monitors
 - owner-scoped modals
 - taskbar selectors
 - monitor bounds enforcement
@@ -49,5 +49,9 @@ console.log(wm.getState());
 
 The package also exports `commands`, `windowManagerReducer`,
 `createInitialState`, `selectors`, and all public types.
+
+New code should prefer `createWorkspace`, `switchWorkspace`, and workspace
+selectors. The older desktop names are still available as compatibility
+aliases.
 
 See the repository README for complete examples.
