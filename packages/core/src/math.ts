@@ -42,7 +42,11 @@ function getClampedBottomY(bounds: Bounds, height: number): number {
   return Math.max(bounds.minY, bounds.maxY - height);
 }
 
-export function snapRectToBounds(rect: Rect, bounds: Bounds, threshold: number): Rect {
+export function snapRectToBounds(
+  rect: Rect,
+  bounds: Bounds,
+  threshold: number,
+): Rect {
   if (threshold <= 0) {
     return rect;
   }
@@ -73,6 +77,63 @@ export function snapRectToBounds(rect: Rect, bounds: Bounds, threshold: number):
   };
 }
 
+function fitDimension(value: number, min: number, max: number): number {
+  const lowerBound = Math.min(min, max);
+  return Math.max(lowerBound, Math.min(value, max));
+}
+
+export function fitRectToBounds(rect: Rect, bounds: Bounds): Rect {
+  const maxWidth = bounds.maxX - bounds.minX;
+  const maxHeight = bounds.maxY - bounds.minY;
+  const sizedRect = {
+    ...rect,
+    width: fitDimension(rect.width, MIN_WIDTH, maxWidth),
+    height: fitDimension(rect.height, MIN_HEIGHT, maxHeight),
+  };
+
+  return clampRectToBounds(sizedRect, bounds);
+}
+
+export function fitResizedRectToBounds(
+  rect: Rect,
+  bounds: Bounds,
+  edge: ResizeEdge,
+): Rect {
+  const maxWidth = bounds.maxX - bounds.minX;
+  const maxHeight = bounds.maxY - bounds.minY;
+  const nextRect: Rect = { ...rect };
+
+  if (edge.includes('left')) {
+    const right = Math.min(bounds.maxX, rect.x + rect.width);
+    const x = Math.max(bounds.minX, rect.x);
+    nextRect.x = x;
+    nextRect.width = Math.min(Math.max(right - x, 0), maxWidth);
+  } else if (edge.includes('right')) {
+    const x = Math.max(bounds.minX, rect.x);
+    const right = Math.min(bounds.maxX, rect.x + rect.width);
+    nextRect.x = Math.min(x, right);
+    nextRect.width = Math.min(Math.max(right - nextRect.x, 0), maxWidth);
+  } else {
+    nextRect.width = Math.min(nextRect.width, maxWidth);
+  }
+
+  if (edge.includes('top')) {
+    const bottom = Math.min(bounds.maxY, rect.y + rect.height);
+    const y = Math.max(bounds.minY, rect.y);
+    nextRect.y = y;
+    nextRect.height = Math.min(Math.max(bottom - y, 0), maxHeight);
+  } else if (edge.includes('bottom')) {
+    const y = Math.max(bounds.minY, rect.y);
+    const bottom = Math.min(bounds.maxY, rect.y + rect.height);
+    nextRect.y = Math.min(y, bottom);
+    nextRect.height = Math.min(Math.max(bottom - nextRect.y, 0), maxHeight);
+  } else {
+    nextRect.height = Math.min(nextRect.height, maxHeight);
+  }
+
+  return clampRectToBounds(nextRect, bounds);
+}
+
 export function snapResizedRectToBounds(
   rect: Rect,
   bounds: Bounds,
@@ -83,7 +144,7 @@ export function snapResizedRectToBounds(
     return rect;
   }
 
-  let nextRect: Rect = { ...rect };
+  const nextRect: Rect = { ...rect };
   const right = rect.x + rect.width;
   const bottom = rect.y + rect.height;
 
@@ -114,7 +175,7 @@ export function resizeRect(
   deltaX: number,
   deltaY: number,
 ): Rect {
-  let nextRect: Rect = { ...rect };
+  const nextRect: Rect = { ...rect };
 
   if (edge.includes('right')) {
     nextRect.width += deltaX;

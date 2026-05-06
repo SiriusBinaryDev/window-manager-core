@@ -22,6 +22,7 @@ The current intended behavior is:
 - the npm account behind `NPM_TOKEN` must be allowed to publish `@window-manager/core` and `@window-manager/react`
 - the default branch must remain `main`, because both Changesets config and workflow behavior assume it
 - `pnpm-lock.yaml` must be committed and in sync, because CI and release install with `--frozen-lockfile`
+- a project license must be chosen before the first public publish
 
 ## Local Versioning Flow
 
@@ -78,10 +79,12 @@ Before expecting the first real publish to succeed, verify:
 3. At least one real `.changeset/*.md` entry exists for the package changes being released.
 4. `NPM_TOKEN` is stored in repository secrets.
 5. The npm token owner has access to the `@window-manager` scope or package names being published.
+6. The package license is selected and documented.
 
 ## Notes
 
 - Package publish metadata is configured for public scoped packages.
+- The package names currently return 404 from the public npm registry, which means they are not publicly published or the current user cannot access them under that scope.
 - Built artifacts are published from `dist` only.
 - If publishing should stay disabled for now, keep the workflow but do not provide `NPM_TOKEN`.
 - In this Windows development environment, `pnpm typecheck` and some recursive `pnpm` commands can fail locally with shell/process issues even though the same commands succeed in GitHub Actions on Ubuntu.

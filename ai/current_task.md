@@ -2,60 +2,77 @@
 
 ## Title
 
-- Expose edge and corner resizing in the playground
+- Full repository audit and publish preparation
 
 ## Status
 
-- Completed
+- Completed locally
 
 ## Objective
 
-- Update the playground UI so windows can be resized by dragging edges and corners, reusing the resize-edge support that already exists in the core
+- Analyze the full repository for core feature coverage, bugs, documentation gaps, pending tasks, and publish readiness.
+- Fix local blockers where possible.
+- Keep publishing blocked only on external credentials or explicit user decisions.
 
 ## Context
 
-- The fixed publish-gate feature list is complete:
-  - multi-desktop support
-  - multi-monitor support
-  - modal windows
-- The important/core feature set is now done
-- The core already supports all resize edges through `ResizeEdge` and `manager.resizeWindow(id, edge, deltaX, deltaY)`
-- The current limitation is only in the playground:
-  - it renders a single bottom-right resize handle
-  - it always calls `resizeWindow(..., 'bottom-right', ...)`
-- The user explicitly asked to make edge resizing the next task
-- Completed in the playground without changing core resize semantics
+- The core feature set is complete:
+  - lifecycle
+  - focus and z-order
+  - movement
+  - edge/corner resize
+  - multi-desktop
+  - multi-monitor
+  - modals
+  - selectors
+  - versioned persistence
+- Repository audit found one core containment bug:
+  - oversized or invalid created/resized windows could exceed monitor bounds at runtime
+- Repository audit also found stale/mojibake human docs and package README gaps for npm publishing.
 
 ## Relevant Files
 
-- `apps/playground/src/App.tsx`
-- `apps/playground/src/styles.css`
-- `apps/playground/src/App.test.tsx`
-- `packages/core/src/types.ts` inspected only
-- `packages/core/src/math.ts` inspected only
+- `packages/core/src/math.ts`
+- `packages/core/src/reducer.ts`
+- `packages/core/src/serialization.ts`
+- `packages/core/tests/core.test.ts`
+- `README.md`
+- `packages/core/README.md`
+- `packages/react/README.md`
+- `packages/core/package.json`
+- `packages/react/package.json`
+- `docs/architecture.md`
+- `docs/roadmap.md`
+- `docs/releasing.md`
+- `BACKLOG.md`
+- `.changeset/bright-tables-shave.md`
 
 ## Constraints
 
-- Keep the change scoped to the playground unless a real core gap is discovered
-- Preserve the current core resize semantics
-- Do not refactor unrelated playground behavior
-- If the UI needs a significant interaction-model choice, ask the user before choosing a surprising behavior
+- Keep business behavior in `packages/core`.
+- Do not invent a license; that is a user/project decision before public publishing.
+- Do not publish without npm credentials and explicit publish intent.
 
 ## Definition Of Done
 
-- the playground exposes draggable resize handles for edges and corners
-- each handle maps to the correct `ResizeEdge`
-- existing maximize, minimize, close, drag, and modal flows still work
-- tests cover at least one non-bottom-right resize path
-- AI continuity files stay consistent with the public demo behavior
+- Core feature coverage is audited.
+- Identified local bugs are fixed and tested.
+- README is simplified for users.
+- Publishable package READMEs are included in package tarballs.
+- Package metadata is improved without making legal/license decisions.
+- Verification passes locally.
+- AI continuity files reflect the new state.
 
 ## Notes
 
-- Implemented by rendering one pointer handle for each core `ResizeEdge`
-- Added a playground interaction test for left-edge resizing
-- Latest verification passed with:
-  - `.\\node_modules\\.bin\\vitest.cmd run apps\\playground\\src\\App.test.tsx`
-  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
-  - `pnpm.cmd -r test`
-  - `pnpm.cmd --filter @window-manager/playground build`
-- The targeted Vitest command and playground build initially hit Windows sandbox process startup failures and passed when rerun with approval outside the sandbox
+- Implemented `fitRectToBounds()` and `fitResizedRectToBounds()` to keep created, moved, resized, restored, and monitor-reflowed windows inside monitor bounds.
+- Added core tests for oversized creation, non-positive creation dimensions, right-edge resize overflow, and left-edge resize at monitor bounds.
+- Fixed existing lint issues in `serialization.ts`.
+- Root and package READMEs now describe usage plainly.
+- Package metadata now includes description, keywords, homepage, bugs, repository, and `sideEffects: false`.
+- `npm view @window-manager/core version` and `npm view @window-manager/react version` returned 404 on 2026-05-06, so the packages are not publicly visible or the current user lacks access to that scope.
+- `npm pack --dry-run` for both publishable packages includes `README.md`, `dist/index.js`, `dist/index.d.ts`, and `package.json`.
+- Remaining publish blockers:
+  - choose and add project license
+  - configure `NPM_TOKEN`
+  - confirm npm account publish access for the `@window-manager` scope

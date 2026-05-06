@@ -67,8 +67,14 @@ function getMonitorRect(monitor: MonitorState): Rect {
   };
 }
 
-function isWindowFocusable(windowEntity: WindowEntity | undefined): windowEntity is WindowEntity {
-  return !!windowEntity && !windowEntity.state.closed && !windowEntity.state.minimized;
+function isWindowFocusable(
+  windowEntity: WindowEntity | undefined,
+): windowEntity is WindowEntity {
+  return (
+    !!windowEntity &&
+    !windowEntity.state.closed &&
+    !windowEntity.state.minimized
+  );
 }
 
 function clampDimension(value: number, min: number, max: number): number {
@@ -113,7 +119,11 @@ function sanitizeMonitor(value: unknown): MonitorState | null {
 }
 
 function sanitizeSnapSettings(value: unknown): DesktopSnapSettings | null {
-  if (!isRecord(value) || !isFiniteNumber(value.threshold) || value.threshold < 0) {
+  if (
+    !isRecord(value) ||
+    !isFiniteNumber(value.threshold) ||
+    value.threshold < 0
+  ) {
     return null;
   }
 
@@ -122,7 +132,11 @@ function sanitizeSnapSettings(value: unknown): DesktopSnapSettings | null {
   };
 }
 
-function sanitizeRect(value: unknown, fallback: Rect, monitor: MonitorState): Rect {
+function sanitizeRect(
+  value: unknown,
+  fallback: Rect,
+  monitor: MonitorState,
+): Rect {
   const baseRect = isRecord(value)
     ? {
         x: isFiniteNumber(value.x) ? value.x : fallback.x,
@@ -159,15 +173,21 @@ function sanitizeWindow(
   const baseRect = sanitizeRect(value.rect, DEFAULT_RECT, monitor);
   const restoreRect = sanitizeRect(value.restoreRect, baseRect, monitor);
 
-  let closed = sanitizeBoolean(parsedState.closed, false);
+  const closed = sanitizeBoolean(parsedState.closed, false);
   let minimized = sanitizeBoolean(parsedState.minimized, false);
   let maximized = sanitizeBoolean(parsedState.maximized, false);
   const flags = {
     resizable: sanitizeBoolean(parsedFlags.resizable, DEFAULT_FLAGS.resizable),
     movable: sanitizeBoolean(parsedFlags.movable, DEFAULT_FLAGS.movable),
     closable: sanitizeBoolean(parsedFlags.closable, DEFAULT_FLAGS.closable),
-    minimizable: sanitizeBoolean(parsedFlags.minimizable, DEFAULT_FLAGS.minimizable),
-    maximizable: sanitizeBoolean(parsedFlags.maximizable, DEFAULT_FLAGS.maximizable),
+    minimizable: sanitizeBoolean(
+      parsedFlags.minimizable,
+      DEFAULT_FLAGS.minimizable,
+    ),
+    maximizable: sanitizeBoolean(
+      parsedFlags.maximizable,
+      DEFAULT_FLAGS.maximizable,
+    ),
   };
 
   if (closed) {
@@ -191,13 +211,17 @@ function sanitizeWindow(
     id,
     desktopId,
     monitorId,
-    ...(typeof value.ownerWindowId === 'string' ? { ownerWindowId: value.ownerWindowId } : {}),
+    ...(typeof value.ownerWindowId === 'string'
+      ? { ownerWindowId: value.ownerWindowId }
+      : {}),
     state: {
       minimized,
       maximized,
       closed,
     },
-    rect: maximized ? getMonitorRect(monitor) : sanitizeRect(value.rect, restoreRect, monitor),
+    rect: maximized
+      ? getMonitorRect(monitor)
+      : sanitizeRect(value.rect, restoreRect, monitor),
     restoreRect,
     flags,
     ...(title !== undefined ? { title } : {}),
@@ -224,7 +248,10 @@ function getTopModalId(
   return null;
 }
 
-function findNextActiveId(orderedWindowIds: WindowId[], windows: Record<WindowId, WindowEntity>): WindowId | null {
+function findNextActiveId(
+  orderedWindowIds: WindowId[],
+  windows: Record<WindowId, WindowEntity>,
+): WindowId | null {
   const topModalId = getTopModalId(orderedWindowIds, windows);
   if (topModalId) {
     return topModalId;
@@ -241,7 +268,10 @@ function findNextActiveId(orderedWindowIds: WindowId[], windows: Record<WindowId
   return null;
 }
 
-function hasOwnerCycle(windowId: WindowId, windows: Record<WindowId, WindowEntity>): boolean {
+function hasOwnerCycle(
+  windowId: WindowId,
+  windows: Record<WindowId, WindowEntity>,
+): boolean {
   const seen = new Set<WindowId>();
   let current: WindowEntity | undefined = windows[windowId];
 
@@ -282,7 +312,11 @@ function enforceModalOwnerOrder(
 
       const currentIndex = nextOrder.indexOf(windowId);
       const ownerIndex = nextOrder.indexOf(windowEntity.ownerWindowId);
-      if (currentIndex === -1 || ownerIndex === -1 || currentIndex > ownerIndex) {
+      if (
+        currentIndex === -1 ||
+        ownerIndex === -1 ||
+        currentIndex > ownerIndex
+      ) {
         continue;
       }
 
@@ -295,7 +329,10 @@ function enforceModalOwnerOrder(
   return nextOrder;
 }
 
-function sanitizeDesktopWorkspace(id: DesktopId, value: unknown): DesktopWorkspace | null {
+function sanitizeDesktopWorkspace(
+  id: DesktopId,
+  value: unknown,
+): DesktopWorkspace | null {
   if (!isRecord(value) || !isRecord(value.monitors)) {
     return null;
   }
@@ -322,13 +359,18 @@ function sanitizeDesktopWorkspace(id: DesktopId, value: unknown): DesktopWorkspa
     monitors,
     activeMonitorId,
     orderedWindowIds: Array.isArray(value.orderedWindowIds)
-      ? value.orderedWindowIds.filter((candidate): candidate is WindowId => typeof candidate === 'string')
+      ? value.orderedWindowIds.filter(
+          (candidate): candidate is WindowId => typeof candidate === 'string',
+        )
       : [],
-    activeWindowId: typeof value.activeWindowId === 'string' ? value.activeWindowId : null,
+    activeWindowId:
+      typeof value.activeWindowId === 'string' ? value.activeWindowId : null,
   };
 }
 
-export function sanitizeWindowManagerState(value: unknown): WindowManagerState | null {
+export function sanitizeWindowManagerState(
+  value: unknown,
+): WindowManagerState | null {
   if (!isRecord(value) || !isRecord(value.desktops)) {
     return null;
   }
@@ -362,7 +404,8 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
     }
 
     const parsedDesktopId =
-      typeof windowValue.desktopId === 'string' && desktops[windowValue.desktopId]
+      typeof windowValue.desktopId === 'string' &&
+      desktops[windowValue.desktopId]
         ? windowValue.desktopId
         : activeDesktopId;
     const workspace = desktops[parsedDesktopId];
@@ -371,7 +414,8 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
     }
 
     const parsedMonitorId =
-      typeof windowValue.monitorId === 'string' && workspace.monitors[windowValue.monitorId]
+      typeof windowValue.monitorId === 'string' &&
+      workspace.monitors[windowValue.monitorId]
         ? windowValue.monitorId
         : workspace.activeMonitorId;
     const monitor = workspace.monitors[parsedMonitorId];
@@ -379,7 +423,13 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
       continue;
     }
 
-    const sanitizedWindow = sanitizeWindow(id, windowValue, parsedDesktopId, parsedMonitorId, monitor);
+    const sanitizedWindow = sanitizeWindow(
+      id,
+      windowValue,
+      parsedDesktopId,
+      parsedMonitorId,
+      monitor,
+    );
     if (sanitizedWindow) {
       windows[id] = sanitizedWindow;
     }
@@ -395,7 +445,8 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
 
     const ownerWindow = windows[ownerWindowId];
     if (!ownerWindow || hasOwnerCycle(windowId, windows)) {
-      const { ownerWindowId: _ownerWindowId, ...windowWithoutOwner } = windowEntity;
+      const windowWithoutOwner = { ...windowEntity };
+      delete windowWithoutOwner.ownerWindowId;
       normalizedWindows[windowId] = windowWithoutOwner;
       continue;
     }
@@ -403,7 +454,8 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
     const ownerWorkspace = desktops[ownerWindow.desktopId];
     const ownerMonitor = ownerWorkspace?.monitors[ownerWindow.monitorId];
     if (!ownerWorkspace || !ownerMonitor) {
-      const { ownerWindowId: _ownerWindowId, ...windowWithoutOwner } = windowEntity;
+      const windowWithoutOwner = { ...windowEntity };
+      delete windowWithoutOwner.ownerWindowId;
       normalizedWindows[windowId] = windowWithoutOwner;
       continue;
     }
@@ -414,8 +466,16 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
       monitorId: ownerWindow.monitorId,
       rect: windowEntity.state.maximized
         ? getMonitorRect(ownerMonitor)
-        : sanitizeRect(windowEntity.rect, windowEntity.restoreRect, ownerMonitor),
-      restoreRect: sanitizeRect(windowEntity.restoreRect, windowEntity.restoreRect, ownerMonitor),
+        : sanitizeRect(
+            windowEntity.rect,
+            windowEntity.restoreRect,
+            ownerMonitor,
+          ),
+      restoreRect: sanitizeRect(
+        windowEntity.restoreRect,
+        windowEntity.restoreRect,
+        ownerMonitor,
+      ),
       ownerWindowId,
     };
   }
@@ -427,7 +487,11 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
 
     for (const candidate of workspace.orderedWindowIds) {
       const windowEntity = normalizedWindows[candidate];
-      if (!windowEntity || windowEntity.desktopId !== desktopId || seen.has(candidate)) {
+      if (
+        !windowEntity ||
+        windowEntity.desktopId !== desktopId ||
+        seen.has(candidate)
+      ) {
         continue;
       }
 
@@ -444,8 +508,15 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
       orderedWindowIds.push(windowId);
     }
 
-    const normalizedOrder = enforceModalOwnerOrder(orderedWindowIds, normalizedWindows);
-    const topModalId = getTopModalId(normalizedOrder, normalizedWindows, desktopId);
+    const normalizedOrder = enforceModalOwnerOrder(
+      orderedWindowIds,
+      normalizedWindows,
+    );
+    const topModalId = getTopModalId(
+      normalizedOrder,
+      normalizedWindows,
+      desktopId,
+    );
     const activeWindowId =
       workspace.activeWindowId &&
       normalizedWindows[workspace.activeWindowId] &&
@@ -480,7 +551,11 @@ export function sanitizeWindowManagerState(value: unknown): WindowManagerState |
 }
 
 function migrateVersionTwoState(value: unknown): WindowManagerState | null {
-  if (!isRecord(value) || !isRecord(value.desktops) || !isRecord(value.windows)) {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.desktops) ||
+    !isRecord(value.windows)
+  ) {
     return null;
   }
 
@@ -521,7 +596,9 @@ function migrateVersionTwoState(value: unknown): WindowManagerState | null {
   });
 }
 
-function sanitizeLegacyWindowManagerState(value: unknown): WindowManagerState | null {
+function sanitizeLegacyWindowManagerState(
+  value: unknown,
+): WindowManagerState | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -536,7 +613,13 @@ function sanitizeLegacyWindowManagerState(value: unknown): WindowManagerState | 
 
   const windows: Record<WindowId, WindowEntity> = {};
   for (const [id, windowValue] of Object.entries(windowsInput)) {
-    const sanitizedWindow = sanitizeWindow(id, windowValue, DEFAULT_DESKTOP_ID, DEFAULT_MONITOR_ID, monitor);
+    const sanitizedWindow = sanitizeWindow(
+      id,
+      windowValue,
+      DEFAULT_DESKTOP_ID,
+      DEFAULT_MONITOR_ID,
+      monitor,
+    );
     if (sanitizedWindow) {
       windows[id] = sanitizedWindow;
     }
@@ -546,7 +629,11 @@ function sanitizeLegacyWindowManagerState(value: unknown): WindowManagerState | 
   const orderedWindowIds: WindowId[] = [];
   if (Array.isArray(legacyState.orderedWindowIds)) {
     for (const candidate of legacyState.orderedWindowIds) {
-      if (typeof candidate !== 'string' || seen.has(candidate) || !windows[candidate]) {
+      if (
+        typeof candidate !== 'string' ||
+        seen.has(candidate) ||
+        !windows[candidate]
+      ) {
         continue;
       }
 
@@ -577,7 +664,12 @@ function sanitizeLegacyWindowManagerState(value: unknown): WindowManagerState | 
 
   if (activeWindowId) {
     const remainingIds = orderedWindowIds.filter((id) => id !== activeWindowId);
-    orderedWindowIds.splice(0, orderedWindowIds.length, ...remainingIds, activeWindowId);
+    orderedWindowIds.splice(
+      0,
+      orderedWindowIds.length,
+      ...remainingIds,
+      activeWindowId,
+    );
   }
 
   return {

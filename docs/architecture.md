@@ -2,34 +2,49 @@
 
 ## Principios
 
-1. Headless y agnóstico de UI: `core` no depende de DOM ni React.
-2. API pública basada en comandos + reducer puro.
-3. Estado serializable versionado.
-4. Selectors para centralizar lectura derivada.
+1. Core headless: sin DOM, sin React y sin estado global externo.
+2. Estado serializable, versionado y facil de inspeccionar.
+3. Reducer puro para las reglas de negocio.
+4. API imperativa opcional con `createWindowManager()`.
+5. Selectors para lecturas derivadas.
 
 ## Capas
 
-- **Core (`packages/core`)**
-  - `types.ts`: contratos de dominio.
-  - `commands.ts`: factory de comandos.
-  - `reducer.ts`: reglas de negocio puras.
-  - `selectors.ts`: consultas derivadas.
-  - `math.ts`: utilidades geométricas.
-  - `serialization.ts`: persistencia/hidratación.
-  - `createWindowManager.ts`: API imperativa amigable.
+### Core (`packages/core`)
 
-- **React (`packages/react`)**
-  - Provider con instancia de `WindowManager`.
-  - Hooks `useWindowManager`, `useWindow`, `useDesktop`, `useTaskbar`, `useVisibleWindows`.
-  - `useSyncExternalStore` para evitar rerenders innecesarios.
+- `types.ts`: tipos publicos del dominio.
+- `commands.ts`: factories de comandos tipados.
+- `reducer.ts`: reglas de negocio.
+- `selectors.ts`: lecturas derivadas.
+- `math.ts`: movimiento, resize, snapping y bounds.
+- `serialization.ts`: serializacion, hidratacion, migraciones y sanitizacion.
+- `createWindowManager.ts`: facade imperativa con subscribe/persistencia.
 
-- **Playground (`apps/playground`)**
-  - Integración completa para crear, mover, redimensionar y controlar ventanas.
-  - Persistencia en `localStorage` vía serialización del manager.
+### React (`packages/react`)
 
-## Decisiones por simplicidad
+- `WindowManagerProvider` recibe o crea una instancia del manager.
+- Hooks sobre `useSyncExternalStore` para leer estado vivo.
+- No reimplementa reglas del core.
 
-- Se usa un único escritorio con bounds rectangulares.
-- `taskbar` es derivado de ventanas no cerradas.
-- Cerrar ventana no elimina entidad, la marca como `closed` para depuración y auditoría.
-- `orderedWindowIds` modela z-order explícito.
+### Playground (`apps/playground`)
+
+- Demo Vite + React.
+- Usa los paquetes workspace como integracion real.
+- Muestra creacion, foco, drag, resize por bordes/esquinas, desktops,
+  monitores, modales, taskbar y persistencia en `localStorage`.
+
+## Modelo de propiedad
+
+- El estado raiz contiene `windows`, `desktops` y `activeDesktopId`.
+- Cada desktop contiene sus monitores, `activeMonitorId`, z-order y ventana activa.
+- Cada ventana pertenece a un desktop y un monitor.
+- Una ventana modal declara `ownerWindowId` y hereda desktop y monitor del owner.
+
+## Reglas importantes
+
+- `orderedWindowIds` define el z-order dentro de un desktop.
+- Solo ventanas no cerradas y no minimizadas pueden recibir foco.
+- Si hay un modal visible, solo el modal superior puede recibir foco en ese desktop.
+- Movimiento y resize mantienen la ventana dentro del monitor asignado.
+- `serialize()` y `hydrate()` son el camino recomendado para persistencia.
+- El estado actual usa version `4`.

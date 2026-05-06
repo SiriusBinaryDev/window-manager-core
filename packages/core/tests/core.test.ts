@@ -10,9 +10,16 @@ import {
   type WindowManagerState,
   windowManagerReducer,
 } from '../src';
-import { resizeRect, snapRectToBounds, snapResizedRectToBounds } from '../src/math';
+import {
+  resizeRect,
+  snapRectToBounds,
+  snapResizedRectToBounds,
+} from '../src/math';
 
-function getWorkspace(state: WindowManagerState, desktopId: string = state.activeDesktopId) {
+function getWorkspace(
+  state: WindowManagerState,
+  desktopId: string = state.activeDesktopId,
+) {
   return state.desktops[desktopId]!;
 }
 
@@ -26,7 +33,10 @@ function getMonitor(
 
 describe('window manager core', () => {
   it('creates windows in the active desktop and active monitor', () => {
-    const state = windowManagerReducer(createInitialState(), commands.createWindow({ id: '1' }));
+    const state = windowManagerReducer(
+      createInitialState(),
+      commands.createWindow({ id: '1' }),
+    );
 
     expect(state.windows['1']).toBeDefined();
     expect(state.windows['1'].desktopId).toBe(DEFAULT_DESKTOP_ID);
@@ -80,13 +90,51 @@ describe('window manager core', () => {
     expect(state.windows['2'].rect.x).toBeGreaterThanOrEqual(1280);
   });
 
+  it('fits oversized created windows inside monitor bounds', () => {
+    const state = windowManagerReducer(
+      createInitialState(),
+      commands.createWindow({
+        id: 'oversized',
+        rect: { x: -100, y: -100, width: 2000, height: 1000 },
+      }),
+    );
+
+    expect(state.windows.oversized.rect).toEqual({
+      x: 0,
+      y: 0,
+      width: 1280,
+      height: 720,
+    });
+  });
+
+  it('normalizes non-positive created window dimensions', () => {
+    const state = windowManagerReducer(
+      createInitialState(),
+      commands.createWindow({
+        id: 'invalid-size',
+        rect: { x: 40, y: 40, width: -10, height: 0 },
+      }),
+    );
+
+    expect(state.windows['invalid-size'].rect).toEqual({
+      x: 40,
+      y: 40,
+      width: 160,
+      height: 120,
+    });
+  });
+
   it('focus updates z-order within a desktop workspace', () => {
     let state = createInitialState();
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
     state = windowManagerReducer(state, commands.createWindow({ id: '2' }));
     state = windowManagerReducer(state, commands.focusWindow('1'));
 
-    expect(getWorkspace(state).orderedWindowIds[getWorkspace(state).orderedWindowIds.length - 1]).toBe('1');
+    expect(
+      getWorkspace(state).orderedWindowIds[
+        getWorkspace(state).orderedWindowIds.length - 1
+      ],
+    ).toBe('1');
     expect(getWorkspace(state).activeWindowId).toBe('1');
   });
 
@@ -166,7 +214,10 @@ describe('window manager core', () => {
       state,
       commands.createWindow({ id: '2', desktopId: 'secondary' }),
     );
-    state = windowManagerReducer(state, commands.switchDesktop(DEFAULT_DESKTOP_ID));
+    state = windowManagerReducer(
+      state,
+      commands.switchDesktop(DEFAULT_DESKTOP_ID),
+    );
 
     state = windowManagerReducer(state, commands.focusWindow('2'));
 
@@ -184,7 +235,10 @@ describe('window manager core', () => {
       }),
     );
     state = windowManagerReducer(state, commands.createWindow({ id: 'left' }));
-    state = windowManagerReducer(state, commands.createWindow({ id: 'right', monitorId: 'right' }));
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({ id: 'right', monitorId: 'right' }),
+    );
     state = windowManagerReducer(state, commands.focusWindow('left'));
 
     expect(getWorkspace(state).activeMonitorId).toBe(DEFAULT_MONITOR_ID);
@@ -204,7 +258,10 @@ describe('window manager core', () => {
         bounds: { minX: 1280, minY: 0, maxX: 2560, maxY: 720 },
       }),
     );
-    state = windowManagerReducer(state, commands.createWindow({ id: 'owner', monitorId: 'right' }));
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({ id: 'owner', monitorId: 'right' }),
+    );
     state = windowManagerReducer(
       state,
       commands.createWindow({
@@ -218,7 +275,10 @@ describe('window manager core', () => {
     expect(state.windows.modal.ownerWindowId).toBe('owner');
     expect(getWorkspace(state).activeWindowId).toBe('modal');
     expect(getWorkspace(state).activeMonitorId).toBe('right');
-    expect(getWorkspace(state).orderedWindowIds.slice(-2)).toEqual(['owner', 'modal']);
+    expect(getWorkspace(state).orderedWindowIds.slice(-2)).toEqual([
+      'owner',
+      'modal',
+    ]);
   });
 
   it('blocks background window focus while a modal is open', () => {
@@ -233,7 +293,10 @@ describe('window manager core', () => {
       }),
     );
 
-    const nextState = windowManagerReducer(state, commands.focusWindow('other'));
+    const nextState = windowManagerReducer(
+      state,
+      commands.focusWindow('other'),
+    );
 
     expect(nextState).toBe(state);
     expect(getWorkspace(nextState).activeWindowId).toBe('modal');
@@ -282,10 +345,17 @@ describe('window manager core', () => {
     );
     state = windowManagerReducer(
       state,
-      commands.createWindow({ id: '2', desktopId: 'secondary', monitorId: 'right' }),
+      commands.createWindow({
+        id: '2',
+        desktopId: 'secondary',
+        monitorId: 'right',
+      }),
     );
     state = windowManagerReducer(state, commands.minimizeWindow('2'));
-    state = windowManagerReducer(state, commands.switchDesktop(DEFAULT_DESKTOP_ID));
+    state = windowManagerReducer(
+      state,
+      commands.switchDesktop(DEFAULT_DESKTOP_ID),
+    );
 
     state = windowManagerReducer(state, commands.restoreWindow('2'));
 
@@ -330,7 +400,12 @@ describe('window manager core', () => {
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
     state = windowManagerReducer(state, commands.maximizeWindow('1'));
 
-    expect(state.windows['1'].rect).toEqual({ x: 20, y: 10, width: 1160, height: 680 });
+    expect(state.windows['1'].rect).toEqual({
+      x: 20,
+      y: 10,
+      width: 1160,
+      height: 680,
+    });
   });
 
   it('does not maximize windows when the capability is disabled', () => {
@@ -392,7 +467,10 @@ describe('window manager core', () => {
       }),
     );
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
-    state = windowManagerReducer(state, commands.createWindow({ id: '2', monitorId: 'right' }));
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({ id: '2', monitorId: 'right' }),
+    );
 
     state = windowManagerReducer(state, commands.minimizeWindow('2'));
 
@@ -409,7 +487,11 @@ describe('window manager core', () => {
     state = windowManagerReducer(state, commands.restoreWindow('1'));
 
     expect(getWorkspace(state).activeWindowId).toBe('1');
-    expect(getWorkspace(state).orderedWindowIds[getWorkspace(state).orderedWindowIds.length - 1]).toBe('1');
+    expect(
+      getWorkspace(state).orderedWindowIds[
+        getWorkspace(state).orderedWindowIds.length - 1
+      ],
+    ).toBe('1');
   });
 
   it('clears the active window when no visible windows remain', () => {
@@ -510,13 +592,25 @@ describe('window manager core', () => {
             state: { minimized: false, maximized: false, closed: false },
             rect: { x: 250, y: 150, width: 500, height: 500 },
             restoreRect: { x: -50, y: -20, width: 999, height: 999 },
-            flags: { resizable: 'yes', movable: false, closable: true, minimizable: false, maximizable: 0 },
+            flags: {
+              resizable: 'yes',
+              movable: false,
+              closable: true,
+              minimizable: false,
+              maximizable: 0,
+            },
           },
           two: {
             state: { minimized: true, maximized: true, closed: false },
             rect: { x: 500, y: 500, width: 50, height: 50 },
             restoreRect: { x: 500, y: 500, width: 10, height: 10 },
-            flags: { resizable: true, movable: true, closable: true, minimizable: true, maximizable: true },
+            flags: {
+              resizable: true,
+              movable: true,
+              closable: true,
+              minimizable: true,
+              maximizable: true,
+            },
           },
         },
         orderedWindowIds: ['ghost', 'one', 'one'],
@@ -525,7 +619,9 @@ describe('window manager core', () => {
     });
 
     const hydrated = hydrateState(raw);
-    const workspace = hydrated ? getWorkspace(hydrated, DEFAULT_DESKTOP_ID) : null;
+    const workspace = hydrated
+      ? getWorkspace(hydrated, DEFAULT_DESKTOP_ID)
+      : null;
 
     expect(hydrated).not.toBeNull();
     expect(hydrated?.version).toBe(4);
@@ -536,8 +632,18 @@ describe('window manager core', () => {
     expect(hydrated?.windows.one.id).toBe('one');
     expect(hydrated?.windows.one.desktopId).toBe(DEFAULT_DESKTOP_ID);
     expect(hydrated?.windows.one.monitorId).toBe(DEFAULT_MONITOR_ID);
-    expect(hydrated?.windows.one.rect).toEqual({ x: 0, y: 0, width: 300, height: 200 });
-    expect(hydrated?.windows.one.restoreRect).toEqual({ x: 0, y: 0, width: 300, height: 200 });
+    expect(hydrated?.windows.one.rect).toEqual({
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 200,
+    });
+    expect(hydrated?.windows.one.restoreRect).toEqual({
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 200,
+    });
   });
 
   it('migrates version 2 multi-desktop payloads into default monitors per desktop', () => {
@@ -573,7 +679,13 @@ describe('window manager core', () => {
             state: { minimized: false, maximized: false, closed: false },
             rect: { x: 10, y: 10, width: 200, height: 120 },
             restoreRect: { x: 10, y: 10, width: 200, height: 120 },
-            flags: { resizable: true, movable: true, closable: true, minimizable: true, maximizable: true },
+            flags: {
+              resizable: true,
+              movable: true,
+              closable: true,
+              minimizable: true,
+              maximizable: true,
+            },
           },
           two: {
             id: 'two',
@@ -581,7 +693,13 @@ describe('window manager core', () => {
             state: { minimized: false, maximized: false, closed: false },
             rect: { x: 20, y: 20, width: 240, height: 160 },
             restoreRect: { x: 20, y: 20, width: 240, height: 160 },
-            flags: { resizable: true, movable: true, closable: true, minimizable: true, maximizable: true },
+            flags: {
+              resizable: true,
+              movable: true,
+              closable: true,
+              minimizable: true,
+              maximizable: true,
+            },
           },
         },
       },
@@ -640,7 +758,12 @@ describe('window manager core', () => {
 
     expect(getWorkspace(hydrated).orderedWindowIds).toEqual(['one']);
     expect(getWorkspace(hydrated).activeWindowId).toBe('one');
-    expect(hydrated.windows.one.rect).toEqual({ x: 120, y: 40, width: 200, height: 200 });
+    expect(hydrated.windows.one.rect).toEqual({
+      x: 120,
+      y: 40,
+      width: 200,
+      height: 200,
+    });
   });
 
   it('does not restore closed windows', () => {
@@ -672,14 +795,22 @@ describe('window manager core', () => {
     );
     state = windowManagerReducer(state, commands.moveWindow('1', 185, 0));
 
-    expect(state.windows['1'].rect).toEqual({ x: 300, y: 40, width: 200, height: 120 });
+    expect(state.windows['1'].rect).toEqual({
+      x: 300,
+      y: 40,
+      width: 200,
+      height: 120,
+    });
   });
 
   it('does not recreate state for no-op move commands', () => {
     let state = createInitialState();
     state = windowManagerReducer(state, commands.createWindow({ id: '1' }));
 
-    const nextState = windowManagerReducer(state, commands.moveWindow('1', 0, 0));
+    const nextState = windowManagerReducer(
+      state,
+      commands.moveWindow('1', 0, 0),
+    );
 
     expect(nextState).toBe(state);
   });
@@ -701,9 +832,61 @@ describe('window manager core', () => {
         rect: { x: 50, y: 40, width: 200, height: 120 },
       }),
     );
-    state = windowManagerReducer(state, commands.resizeWindow('1', 'right', 235, 0));
+    state = windowManagerReducer(
+      state,
+      commands.resizeWindow('1', 'right', 235, 0),
+    );
 
-    expect(state.windows['1'].rect).toEqual({ x: 50, y: 40, width: 450, height: 120 });
+    expect(state.windows['1'].rect).toEqual({
+      x: 50,
+      y: 40,
+      width: 450,
+      height: 120,
+    });
+  });
+
+  it('fits right-edge resize to monitor bounds', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({
+        id: '1',
+        rect: { x: 100, y: 40, width: 200, height: 120 },
+      }),
+    );
+    state = windowManagerReducer(
+      state,
+      commands.resizeWindow('1', 'right', 2000, 0),
+    );
+
+    expect(state.windows['1'].rect).toEqual({
+      x: 100,
+      y: 40,
+      width: 1180,
+      height: 120,
+    });
+  });
+
+  it('keeps the opposite edge stable when a left-edge resize reaches monitor bounds', () => {
+    let state = createInitialState();
+    state = windowManagerReducer(
+      state,
+      commands.createWindow({
+        id: '1',
+        rect: { x: 100, y: 40, width: 200, height: 120 },
+      }),
+    );
+    state = windowManagerReducer(
+      state,
+      commands.resizeWindow('1', 'left', -200, 0),
+    );
+
+    expect(state.windows['1'].rect).toEqual({
+      x: 0,
+      y: 40,
+      width: 300,
+      height: 120,
+    });
   });
 
   it('updates only the targeted monitor when setMonitor receives an explicit monitor id', () => {
@@ -746,8 +929,12 @@ describe('window manager core', () => {
 
     expect(nextState.activeDesktopId).toBe(DEFAULT_DESKTOP_ID);
     expect(getMonitor(nextState).size.width).toBe(1280);
-    expect(getMonitor(nextState, DEFAULT_DESKTOP_ID, 'right').size.width).toBe(300);
-    expect(nextState.windows['default-window'].rect).toEqual(state.windows['default-window'].rect);
+    expect(getMonitor(nextState, DEFAULT_DESKTOP_ID, 'right').size.width).toBe(
+      300,
+    );
+    expect(nextState.windows['default-window'].rect).toEqual(
+      state.windows['default-window'].rect,
+    );
     expect(nextState.windows['right-window'].rect).toEqual({
       x: 660,
       y: 50,

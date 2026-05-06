@@ -44,7 +44,7 @@
   - each window belongs to exactly one monitor through `window.monitorId`
   - new windows default to the active monitor in the target desktop
   - `focusWindow(id)`, `restoreWindow(id)`, active-window promotion, and traversal move `activeMonitorId` to the focused window's monitor when needed
-  - create, move, resize, maximize, restore, and monitor updates now clamp against the assigned monitor bounds
+  - create, move, resize, maximize, restore, and monitor updates now fit windows inside the assigned monitor bounds
   - version `2` payloads migrate into a default monitor per desktop
   - version `1` payloads still migrate into the `default` desktop and `default` monitor
 - Modal windows are implemented:
@@ -90,14 +90,16 @@
   - minimize, maximize, close
   - localStorage persistence
 - README and docs reflect the multi-monitor API
+- Publishable packages include package-level README files for npm package pages
+- Publishable package metadata includes descriptions, keywords, repository, homepage, bugs, public publish config, and `sideEffects: false`
 - Test coverage includes:
-  - core lifecycle, focus, snapping, serialization, migration, and monitor-aware behavior
+  - core lifecycle, focus, snapping, serialization, migration, monitor-aware behavior, and runtime containment for oversized/invalid rects
   - React adapter provider/hook wiring and live subscription rerenders
   - playground persistence plus desktop and monitor UI interactions
 
 ## In Progress
 
-- Release workflow hardening is complete locally, but full publish validation is still blocked on repository secrets and npm publish access
+- Release workflow hardening is complete locally, but full publish validation is still blocked on a license decision, repository secrets, and npm publish access
 
 ## Not Implemented
 
@@ -107,16 +109,18 @@
 
 - UI-side automated coverage is still basic compared with the core coverage
 - Hydration policy still favors sanitizing many invalid details instead of rejecting every imperfect payload
-- `pnpm typecheck` from the root still fails in this Windows environment with a recursive `pnpm` shell/process issue, even though direct package `tsc --noEmit` runs succeed
+- Some recursive `pnpm` commands can fail inside the Windows sandbox with shell/process startup errors, but rerunning with approval outside the sandbox passes
 - Release publishing still depends on external setup:
+  - a license must be chosen and documented before public publishing
   - `NPM_TOKEN` must exist in GitHub Actions secrets
   - publish access must exist for the package scope
+  - the `@window-manager/core` and `@window-manager/react` package names returned 404 from the public npm registry on 2026-05-06
 
 ## Current Development Focus
 
 - The important/core feature set is complete
-- The requested playground edge/corner resizing task is complete
-- Revisit release validation when repository secrets and npm publish access are available
+- Full repository audit and local publish preparation are complete
+- Revisit release validation when a license is chosen and repository secrets/npm publish access are available
 
 ## Notes For Next Session
 
@@ -124,13 +128,15 @@
 - For release workflow validation, confirm the external prerequisites before running publish-oriented commands
 - Commit each completed feature in its own separate commit
 - Ask the user before making an important implementation decision when more than one reasonable direction exists
-- Direct typechecks passed with:
+- Latest verification passed with:
+  - `pnpm.cmd -r lint`
+  - `pnpm.cmd typecheck`
+  - `pnpm.cmd -r test`
+  - `pnpm.cmd build`
+  - `npm.cmd pack --dry-run` in `packages/core`
+  - `npm.cmd pack --dry-run` in `packages/react`
+  - `pnpm.cmd changeset -- status`
+- Direct package typechecks also passed with:
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\core\\tsconfig.json`
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p packages\\react\\tsconfig.json`
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
-- Workspace tests passed with:
-  - `pnpm.cmd -r test`
-- Playground build passed with:
-  - `pnpm.cmd --filter @window-manager/playground build`
-- Publishable package builds passed with:
-  - `pnpm.cmd build:packages`
