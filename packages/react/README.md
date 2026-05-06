@@ -1,14 +1,14 @@
 # @window-manager/react
 
-Provider y hooks React para `@window-manager/core`.
+React provider and hooks for `@window-manager/core`.
 
-## Instalacion
+## Install
 
 ```bash
 pnpm add @window-manager/core @window-manager/react
 ```
 
-## Uso basico
+## Basic Usage
 
 ```tsx
 import { createWindowManager } from '@window-manager/core';
@@ -59,4 +59,4 @@ export function App() {
 - `useTaskbar()`
 - `useVisibleWindows()`
 
-Ver el README del repositorio para ejemplos completos.
+See the repository README for complete examples.

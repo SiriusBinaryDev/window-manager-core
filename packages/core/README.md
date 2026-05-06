@@ -1,16 +1,16 @@
 # @window-manager/core
 
-Core headless para gestionar ventanas tipo desktop en apps web.
+Headless TypeScript state manager for desktop-style windows in web apps.
 
-No depende de React ni del DOM.
+This package has no DOM or React dependency.
 
-## Instalacion
+## Install
 
 ```bash
 pnpm add @window-manager/core
 ```
 
-## Uso basico
+## Basic Usage
 
 ```ts
 import { createWindowManager } from '@window-manager/core';
@@ -29,23 +29,25 @@ wm.resizeWindow('terminal', 'bottom-right', 80, 40);
 console.log(wm.getState());
 ```
 
-## Incluye
+## Features
 
-- lifecycle de ventanas
-- focus y z-order
-- move y resize por bordes/esquinas
-- desktops y monitores
-- modales por owner
-- taskbar por selector
-- serializacion e hidratacion versionada
+- window lifecycle
+- focus and z-order
+- move and edge/corner resize
+- desktops and monitors
+- owner-scoped modals
+- taskbar selectors
+- monitor bounds enforcement
+- optional snapping
+- versioned serialization and hydration
 
 ## API
 
-`createWindowManager()` expone comandos imperativos como `createWindow`,
+`createWindowManager()` exposes imperative methods such as `createWindow`,
 `moveWindow`, `resizeWindow`, `focusWindow`, `maximizeWindow`, `minimizeWindow`,
-`restoreWindow`, `closeWindow`, `serialize` y `hydrate`.
+`restoreWindow`, `closeWindow`, `serialize`, and `hydrate`.
 
-Tambien se exportan `commands`, `windowManagerReducer`, `createInitialState`,
-`selectors` y todos los tipos publicos.
+The package also exports `commands`, `windowManagerReducer`,
+`createInitialState`, `selectors`, and all public types.
 
-Ver el README del repositorio para ejemplos completos.
+See the repository README for complete examples.

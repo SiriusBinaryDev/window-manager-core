@@ -3,3 +3,4 @@ dist
 .vite
 coverage
 .DS_Store
+.tmp-playground-*.log

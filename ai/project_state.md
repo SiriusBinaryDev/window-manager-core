@@ -80,16 +80,21 @@
   - `useVisibleWindows`
 - Playground supports:
   - window creation
+  - fixed capability window creation
   - modal window creation from the active window
   - desktop creation and switching
   - monitor creation and switching within the active desktop
+  - monitor snapping toggle
+  - monitor bounds resizing
   - modal backdrop rendering
   - pointer drag
   - edge and corner pointer resize handles
-  - focus
-  - minimize, maximize, close
+  - focus traversal
+  - minimize, maximize/restore toggle, close
+  - selector/state readouts
   - localStorage persistence
-- README and docs reflect the multi-monitor API
+- Human-facing docs and package READMEs are in English and reflect the multi-monitor API
+- Architecture docs document the desktop-owned monitor model and the tradeoff versus global monitor ownership
 - Publishable packages include package-level README files for npm package pages
 - Publishable package metadata includes descriptions, keywords, repository, homepage, bugs, public publish config, and `sideEffects: false`
 - Test coverage includes:
@@ -120,6 +125,7 @@
 
 - The important/core feature set is complete
 - Full repository audit and local publish preparation are complete
+- English documentation and styled playground completion are complete
 - Revisit release validation when a license is chosen and repository secrets/npm publish access are available
 
 ## Notes For Next Session
@@ -133,6 +139,7 @@
   - `pnpm.cmd typecheck`
   - `pnpm.cmd -r test`
   - `pnpm.cmd build`
+  - `.\\node_modules\\.bin\\vitest.cmd run apps\\playground\\src\\App.test.tsx`
   - `npm.cmd pack --dry-run` in `packages/core`
   - `npm.cmd pack --dry-run` in `packages/react`
   - `pnpm.cmd changeset -- status`
