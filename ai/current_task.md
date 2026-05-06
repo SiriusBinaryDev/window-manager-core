@@ -6,7 +6,7 @@
 
 ## Status
 
-- Ready to start
+- Completed
 
 ## Objective
 
@@ -24,16 +24,15 @@
   - it renders a single bottom-right resize handle
   - it always calls `resizeWindow(..., 'bottom-right', ...)`
 - The user explicitly asked to make edge resizing the next task
+- Completed in the playground without changing core resize semantics
 
 ## Relevant Files
 
 - `apps/playground/src/App.tsx`
 - `apps/playground/src/styles.css`
 - `apps/playground/src/App.test.tsx`
-- `packages/core/src/types.ts`
-- `packages/core/src/math.ts`
-- `README.md`
-- `docs/examples.md`
+- `packages/core/src/types.ts` inspected only
+- `packages/core/src/math.ts` inspected only
 
 ## Constraints
 
@@ -48,8 +47,15 @@
 - each handle maps to the correct `ResizeEdge`
 - existing maximize, minimize, close, drag, and modal flows still work
 - tests cover at least one non-bottom-right resize path
-- docs and AI continuity files stay consistent if the public demo behavior changes materially
+- AI continuity files stay consistent with the public demo behavior
 
 ## Notes
 
-- Latest verification passed with direct package typechecks, `pnpm -r test`, and `pnpm build:packages`
+- Implemented by rendering one pointer handle for each core `ResizeEdge`
+- Added a playground interaction test for left-edge resizing
+- Latest verification passed with:
+  - `.\\node_modules\\.bin\\vitest.cmd run apps\\playground\\src\\App.test.tsx`
+  - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
+  - `pnpm.cmd -r test`
+  - `pnpm.cmd --filter @window-manager/playground build`
+- The targeted Vitest command and playground build initially hit Windows sandbox process startup failures and passed when rerun with approval outside the sandbox

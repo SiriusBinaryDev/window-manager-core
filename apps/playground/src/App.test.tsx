@@ -11,6 +11,7 @@ import { PlaygroundRoot } from './App';
 
 let activeContainer: HTMLDivElement | null = null;
 let activeRoot: ReturnType<typeof createRoot> | null = null;
+const originalSetPointerCapture = HTMLElement.prototype.setPointerCapture;
 
 function click(element: Element): void {
   act(() => {
@@ -18,8 +19,22 @@ function click(element: Element): void {
   });
 }
 
+function pointer(element: Element, type: string, clientX: number, clientY: number): void {
+  act(() => {
+    const event = new MouseEvent(type, { bubbles: true, clientX, clientY });
+    Object.defineProperty(event, 'pointerId', { value: 1 });
+    element.dispatchEvent(event);
+  });
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
+
+  if (originalSetPointerCapture) {
+    HTMLElement.prototype.setPointerCapture = originalSetPointerCapture;
+  } else {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).setPointerCapture;
+  }
 
   if (activeRoot) {
     act(() => {
@@ -183,5 +198,36 @@ describe('playground interactions', () => {
     click(closeButton as Element);
 
     expect(manager.getState().windows.alpha.state.closed).toBe(true);
+  });
+
+  it('resizes a window from the left edge handle', () => {
+    const manager = createWindowManager();
+    manager.createWindow({
+      id: 'alpha',
+      title: 'Alpha',
+      rect: { x: 100, y: 100, width: 300, height: 200 },
+    });
+    activeContainer = document.createElement('div');
+    document.body.appendChild(activeContainer);
+    activeRoot = createRoot(activeContainer);
+    HTMLElement.prototype.setPointerCapture = vi.fn();
+
+    act(() => {
+      activeRoot?.render(<PlaygroundRoot manager={manager} />);
+    });
+
+    const resizeHandle = activeContainer.querySelector('[data-resize-edge="left"]');
+    expect(resizeHandle).not.toBeNull();
+
+    pointer(resizeHandle as Element, 'pointerdown', 100, 150);
+    pointer(resizeHandle as Element, 'pointermove', 80, 150);
+    pointer(resizeHandle as Element, 'pointerup', 80, 150);
+
+    expect(manager.getState().windows.alpha.rect).toMatchObject({
+      x: 80,
+      y: 100,
+      width: 320,
+      height: 200,
+    });
   });
 });

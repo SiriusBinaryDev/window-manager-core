@@ -10,7 +10,18 @@ import {
 } from '@window-manager/react';
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 
-import type { WindowManager } from '@window-manager/core';
+import type { ResizeEdge, WindowManager } from '@window-manager/core';
+
+const RESIZE_EDGES: ResizeEdge[] = [
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+];
 
 export function PlaygroundApp(): React.JSX.Element {
   const manager = useWindowManager();
@@ -193,7 +204,7 @@ function WindowView({ id, zIndex, isModal }: { id: string; zIndex: number; isMod
   const windows = useVisibleWindows();
   const windowEntity = windows.find((item) => item.id === id) ?? null;
   const dragRef = useRef<{ x: number; y: number } | null>(null);
-  const resizeRef = useRef<{ x: number; y: number } | null>(null);
+  const resizeRef = useRef<{ x: number; y: number; edge: ResizeEdge } | null>(null);
   const titleId = `window-title-${id}`;
 
   if (!windowEntity) {
@@ -224,14 +235,16 @@ function WindowView({ id, zIndex, isModal }: { id: string; zIndex: number; isMod
     dragRef.current = null;
   };
 
-  const startResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
-    if (!windowEntity.flags.resizable) {
-      return;
-    }
+  const startResize =
+    (edge: ResizeEdge) =>
+    (event: ReactPointerEvent<HTMLDivElement>): void => {
+      if (!windowEntity.flags.resizable) {
+        return;
+      }
 
-    event.currentTarget.setPointerCapture(event.pointerId);
-    resizeRef.current = { x: event.clientX, y: event.clientY };
-  };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      resizeRef.current = { x: event.clientX, y: event.clientY, edge };
+    };
 
   const onResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!resizeRef.current) {
@@ -239,8 +252,9 @@ function WindowView({ id, zIndex, isModal }: { id: string; zIndex: number; isMod
     }
     const deltaX = event.clientX - resizeRef.current.x;
     const deltaY = event.clientY - resizeRef.current.y;
-    resizeRef.current = { x: event.clientX, y: event.clientY };
-    manager.resizeWindow(windowEntity.id, 'bottom-right', deltaX, deltaY);
+    const { edge } = resizeRef.current;
+    resizeRef.current = { x: event.clientX, y: event.clientY, edge };
+    manager.resizeWindow(windowEntity.id, edge, deltaX, deltaY);
   };
 
   const stopResize = (): void => {
@@ -303,13 +317,18 @@ function WindowView({ id, zIndex, isModal }: { id: string; zIndex: number; isMod
         </div>
       </div>
       <div className="content">Headless core + React adapter demo</div>
-      <div
-        className="resize-handle"
-        aria-hidden="true"
-        onPointerDown={startResize}
-        onPointerMove={onResize}
-        onPointerUp={stopResize}
-      />
+      {RESIZE_EDGES.map((edge) => (
+        <div
+          key={edge}
+          className={`resize-handle ${edge}`}
+          data-resize-edge={edge}
+          aria-hidden="true"
+          onPointerDown={startResize(edge)}
+          onPointerMove={onResize}
+          onPointerUp={stopResize}
+          onPointerCancel={stopResize}
+        />
+      ))}
     </div>
   );
 }

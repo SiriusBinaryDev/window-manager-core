@@ -85,7 +85,7 @@
   - monitor creation and switching within the active desktop
   - modal backdrop rendering
   - pointer drag
-  - bottom-right resize only
+  - edge and corner pointer resize handles
   - focus
   - minimize, maximize, close
   - localStorage persistence
@@ -115,13 +115,13 @@
 ## Current Development Focus
 
 - The important/core feature set is complete
-- Next requested UI task: expose edge and corner resizing in the playground using the existing core `ResizeEdge` support
-- Revisit release validation after that scoped playground improvement
+- The requested playground edge/corner resizing task is complete
+- Revisit release validation when repository secrets and npm publish access are available
 
 ## Notes For Next Session
 
 - Start in `packages/core` for any behavior change; update React and playground only after the core API is settled
-- For the current next task, start in `apps/playground/src/App.tsx` because the core resize behavior is already implemented
+- For release workflow validation, confirm the external prerequisites before running publish-oriented commands
 - Commit each completed feature in its own separate commit
 - Ask the user before making an important implementation decision when more than one reasonable direction exists
 - Direct typechecks passed with:
@@ -130,5 +130,7 @@
   - `.\\node_modules\\.bin\\tsc.cmd --noEmit -p apps\\playground\\tsconfig.json`
 - Workspace tests passed with:
   - `pnpm.cmd -r test`
+- Playground build passed with:
+  - `pnpm.cmd --filter @window-manager/playground build`
 - Publishable package builds passed with:
   - `pnpm.cmd build:packages`
