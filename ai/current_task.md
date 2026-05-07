@@ -2,7 +2,7 @@
 
 ## Title
 
-- Workspace naming aliases and documentation
+- Add MIT license and run final checks
 
 ## Status
 
@@ -10,53 +10,41 @@
 
 ## Objective
 
-- Make the public API and human-facing docs prefer `workspace` terminology.
-- Keep the change non-breaking by retaining the existing desktop-named API and serialized state fields.
-- Update the playground UI to use workspace language.
+- Resolve the license blocker before publishing.
+- Verify that publishable packages include license metadata and license text.
+- Run final local checks before the npm token/publish step.
 
 ## Context
 
-- The user clarified that the monitor/workspace ownership discussion should be handled as naming convention, not a breaking state-model migration.
-- Public docs now describe workspaces as the main concept.
-- Serialized state still uses `desktops`, `desktopId`, and `activeDesktopId` for compatibility with persisted payloads and existing consumers.
+- MIT was selected as the project license.
+- The root repo has `LICENSE`.
+- Each publishable package has its own `LICENSE` so `npm pack` includes the license text in package tarballs.
 
 ## Relevant Files
 
-- `packages/core/src/types.ts`
-- `packages/core/src/commands.ts`
-- `packages/core/src/selectors.ts`
-- `packages/core/src/createWindowManager.ts`
-- `packages/core/src/reducer.ts`
-- `packages/core/tests/core.test.ts`
-- `packages/react/src/index.tsx`
-- `packages/react/tests/index.test.tsx`
-- `apps/playground/src/App.tsx`
-- `apps/playground/src/styles.css`
-- `apps/playground/src/App.test.tsx`
+- `LICENSE`
+- `package.json`
+- `packages/core/LICENSE`
+- `packages/core/package.json`
+- `packages/react/LICENSE`
+- `packages/react/package.json`
 - `README.md`
-- `docs/architecture.md`
-- `docs/state-model.md`
-- `docs/examples.md`
+- `docs/releasing.md`
 - `docs/roadmap.md`
-- `packages/core/README.md`
-- `packages/react/README.md`
-- `.changeset/bright-tables-shave.md`
 
 ## Constraints
 
-- Do not rename internal serialized desktop fields in a patch release.
-- Keep desktop-named methods, selectors, hooks, and types working as compatibility aliases.
-- Keep playground behavior delegated to the public manager API.
-- Keep docs and package READMEs in English.
+- Keep publishable package metadata explicit.
+- Keep package tarballs self-contained with README, LICENSE, package metadata, and built `dist`.
+- Do not attempt real publishing until `NPM_TOKEN` and npm scope access are confirmed.
 
 ## Definition Of Done
 
-- Core exports workspace aliases for ids, workspace state, workspaces, commands, selectors, and manager methods.
-- `createWindow` accepts `workspaceId` while retaining `desktopId`.
-- React exports workspace hooks while retaining desktop hooks.
-- Playground UI uses workspace terminology and calls workspace-named manager methods.
-- README and package docs explain workspace-first usage plus desktop compatibility names.
-- Verification passes.
+- Root and package-level MIT license files exist.
+- Root and publishable package manifests include `"license": "MIT"`.
+- README includes a license section.
+- Release docs no longer list license selection as an unresolved prerequisite.
+- Final checks pass.
 
 ## Notes
 

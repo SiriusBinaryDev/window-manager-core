@@ -222,3 +222,7 @@ pnpm --filter @window-manager/playground dev
 ```
 
 The playground demonstrates window creation, fixed capability flags, drag, edge and corner resize, minimize, maximize, restore, close, focus traversal, workspaces, monitors, monitor snapping, monitor resizing, modals, taskbar behavior, selectors, and `localStorage` persistence.
+
+## License
+
+MIT

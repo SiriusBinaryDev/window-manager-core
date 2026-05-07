@@ -13,6 +13,7 @@
   - `prettier`
 - Human-facing docs are now English; keep new public docs and package READMEs in English
 - Public docs and new public API examples should prefer workspace terminology over desktop terminology
+- Project license is MIT; keep root and publishable package license files in sync
 - Publishable packages should each keep a local `README.md`, because npm package pages use the package directory README rather than the monorepo root README
 - Commit every implemented feature as its own separate git commit; do not bundle unrelated completed features together
 - If an implementation requires an important product, API, architecture, persistence, or workflow decision, stop and ask the user before choosing on their behalf

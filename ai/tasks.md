@@ -10,8 +10,7 @@
 
 - Validate the release workflow with real CI secrets when publishing is intended
   - local workflow hardening, docs, package metadata, package READMEs, pack dry-runs, lint, typecheck, tests, and build are complete
-  - external publish validation is deferred until license, secrets, and npm access are available
-- Choose and add the project license before public publishing
+  - external publish validation is deferred until secrets and npm access are available
 - Configure `NPM_TOKEN` in GitHub Actions secrets
 - Confirm npm publish access for the `@window-manager` scope
 

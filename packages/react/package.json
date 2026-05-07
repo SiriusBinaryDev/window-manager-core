@@ -2,6 +2,7 @@
   "name": "@window-manager/react",
   "version": "0.1.0",
   "description": "React provider and hooks for @window-manager/core.",
+  "license": "MIT",
   "keywords": [
     "window-manager",
     "desktop",

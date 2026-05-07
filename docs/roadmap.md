@@ -18,7 +18,7 @@
 
 ## Current Publishing Work
 
-- Choose and document the project license.
+- Keep license metadata current.
 - Configure `NPM_TOKEN` in GitHub Actions secrets.
 - Confirm npm publish access for the `@window-manager` scope.
 - Run the release workflow against real repository secrets.

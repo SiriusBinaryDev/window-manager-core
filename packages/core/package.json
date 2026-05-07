@@ -2,6 +2,7 @@
   "name": "@window-manager/core",
   "version": "0.1.0",
   "description": "Headless state manager for desktop-style windows in web apps.",
+  "license": "MIT",
   "keywords": [
     "window-manager",
     "desktop",

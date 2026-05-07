@@ -111,6 +111,7 @@
 - Architecture docs document the workspace-owned monitor model and explain that desktop-named state fields remain for compatibility
 - Publishable packages include package-level README files for npm package pages
 - Publishable package metadata includes descriptions, keywords, repository, homepage, bugs, public publish config, and `sideEffects: false`
+- MIT license is documented in the root `LICENSE`, each publishable package `LICENSE`, and package metadata
 - Test coverage includes:
   - core lifecycle, focus, snapping, serialization, migration, monitor-aware behavior, and runtime containment for oversized/invalid rects
   - React adapter provider/hook wiring and live subscription rerenders
@@ -118,7 +119,7 @@
 
 ## In Progress
 
-- Release workflow hardening is complete locally, but full publish validation is still blocked on a license decision, repository secrets, and npm publish access
+- Release workflow hardening is complete locally, but full publish validation is still blocked on repository secrets and npm publish access
 
 ## Not Implemented
 
@@ -130,7 +131,6 @@
 - Hydration policy still favors sanitizing many invalid details instead of rejecting every imperfect payload
 - Some recursive `pnpm` commands can fail inside the Windows sandbox with shell/process startup errors, but rerunning with approval outside the sandbox passes
 - Release publishing still depends on external setup:
-  - a license must be chosen and documented before public publishing
   - `NPM_TOKEN` must exist in GitHub Actions secrets
   - publish access must exist for the package scope
   - the `@window-manager/core` and `@window-manager/react` package names returned 404 from the public npm registry on 2026-05-06
@@ -141,7 +141,8 @@
 - Full repository audit and local publish preparation are complete
 - English documentation and styled playground completion are complete
 - Workspace naming aliases and workspace-first docs are complete
-- Revisit release validation when a license is chosen and repository secrets/npm publish access are available
+- MIT license setup and final local checks are complete
+- Revisit release validation when repository secrets/npm publish access are available
 
 ## Notes For Next Session
 
