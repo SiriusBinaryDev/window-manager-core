@@ -1,0 +1,46 @@
+{
+  "name": "@window-manager/core",
+  "version": "0.1.1",
+  "description": "Headless state manager for desktop-style windows in web apps.",
+  "license": "MIT",
+  "keywords": [
+    "window-manager",
+    "desktop",
+    "headless",
+    "typescript"
+  ],
+  "homepage": "https://github.com/SiriusBinaryDev/window-manager-core#readme",
+  "bugs": {
+    "url": "https://github.com/SiriusBinaryDev/window-manager-core/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SiriusBinaryDev/window-manager-core.git",
+    "directory": "packages/core"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "test": "vitest run",
+    "lint": "eslint src tests --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
