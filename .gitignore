@@ -1,0 +1,11 @@
+node_modules
+dist
+.vite
+coverage
+.DS_Store
+*.tgz
+*.tsbuildinfo
+ai/
+.github-packages/
+.tmp-npm-cache*/
+.tmp-playground-*.log

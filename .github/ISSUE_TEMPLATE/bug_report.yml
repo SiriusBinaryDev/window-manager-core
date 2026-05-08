@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible bug in window-manager-core.
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: input
+    id: packages
+    attributes:
+      label: Package(s)
+      description: Which package is affected?
+      placeholder: '@window-manager/core, @window-manager/react, playground'
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide a minimal reproduction or clear steps.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include package version, browser/runtime, React version when relevant, and package manager.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add logs, screenshots, or related details.
