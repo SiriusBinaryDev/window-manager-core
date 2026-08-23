@@ -1,5 +1,12 @@
 # @window-manager/core
 
+## 0.1.2
+
+### Patch Changes
+
+- c866ea0: Update package documentation, Apache-2.0 license files, and metadata for public repository readiness.
+- Security: refresh the development and build toolchain to patched versions (vitest, vite, postcss, js-yaml, brace-expansion, esbuild, @babel/core, ws), resolving all open Dependabot alerts. No runtime code changes.
+
 ## 0.1.1
 
 ### Patch Changes
